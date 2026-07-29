@@ -1,0 +1,8 @@
+{
+  "name": "Mount Everest Explorer",
+  "description": "An animated interactive website exploring the majesty of Mount Everest.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
