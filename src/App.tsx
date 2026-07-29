@@ -1,6 +1,7 @@
 import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
 import { Mountain, Compass, Wind, ThermometerSnowflake, Users, Map, MoreVertical, ExternalLink, TreePine, Waves, CloudRain, Volume2, VolumeX, Search, ArrowDown } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
+import { destinations as defaultDestinations } from './destinations';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 40, filter: 'blur(10px)' },
@@ -61,7 +62,18 @@ const Particles = () => {
 
 
 export default function App() {
-  const [destinations, setDestinations] = useState<any[]>([]);
+  const [destinations, setDestinations] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('custom_destinations');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      // Ignore storage errors
+    }
+    return defaultDestinations;
+  });
   const { scrollYProgress } = useScroll();
   const y = useTransform(scrollYProgress, [0, 1], ['0%', '60%']);
   const textY = useTransform(scrollYProgress, [0, 1], ['0%', '150%']);
@@ -76,9 +88,20 @@ export default function App() {
 
   useEffect(() => {
     fetch('/api/destinations')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('API unavailable');
+        return res.json();
+      })
       .then(data => {
-        setDestinations(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setDestinations(data);
+          try {
+            localStorage.setItem('custom_destinations', JSON.stringify(data));
+          } catch (e) {}
+        }
+      })
+      .catch(() => {
+        // Fallback gracefully to defaultDestinations or localStorage
       });
   }, []);
 
@@ -111,9 +134,8 @@ export default function App() {
     }
   }, [isLoaded]);
 
-  const dest = destinations[activeIndex];
-
-  if (!dest) return null;
+  const activeDestinations = destinations.length > 0 ? destinations : defaultDestinations;
+  const dest = activeDestinations[activeIndex] || activeDestinations[0] || defaultDestinations[0];
 
   const getIcon = (iconName: string) => {
     switch (iconName) {
@@ -127,6 +149,14 @@ export default function App() {
 
   return (
     <>
+      {/* Viewport Scroll Progress Indicator */}
+      <div className="fixed top-0 left-0 right-0 h-[3px] z-[100] bg-text-main/10 pointer-events-none">
+        <motion.div
+          className="h-full bg-accent origin-left shadow-[0_0_10px_rgba(242,125,38,0.8)]"
+          style={{ scaleX: scrollYProgress }}
+        />
+      </div>
+
       <DraggableCompass />
       <AnimatePresence>
         {!isLoaded && <LandingScreen />}
