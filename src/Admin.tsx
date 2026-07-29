@@ -1,20 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, User, LogIn, Edit, Save, LogOut, Settings, Camera, Map as MapIcon, Image as ImageIcon } from 'lucide-react';
+import { Lock, User, LogIn, Edit, Save, LogOut, Settings, Camera, Map as MapIcon, Image as ImageIcon, Eye, EyeOff } from 'lucide-react';
 import { destinations as defaultDestinations } from './destinations';
 
 export default function Admin() {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('adminToken'));
+  const [token, setToken] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('adminToken');
+    } catch (e) {
+      return null;
+    }
+  });
   
   if (!token) {
     return <AdminLogin setToken={(t) => {
-      localStorage.setItem('adminToken', t);
+      try { localStorage.setItem('adminToken', t); } catch (e) {}
       setToken(t);
     }} />;
   }
 
   return <AdminDashboard token={token} onLogout={() => {
-    localStorage.removeItem('adminToken');
+    try { localStorage.removeItem('adminToken'); } catch (e) {}
     setToken(null);
   }} />;
 }
@@ -22,26 +28,47 @@ export default function Admin() {
 function AdminLogin({ setToken }: { setToken: (t: string) => void }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const u = username.trim();
+    const u = username.trim().toLowerCase();
     const p = password.trim();
 
-    // 1. Default master login check (admin / password)
-    if (u === 'admin' && p === 'password') {
+    if (!u || !p) {
+      setError('Please enter username and password');
+      return;
+    }
+
+    // 1. Master default check (admin / password OR admin / admin)
+    if (u === 'admin' && (p === 'password' || p === 'admin')) {
       try { localStorage.setItem('adminToken', 'static-admin-token'); } catch (e) {}
       setToken('static-admin-token');
       return;
     }
 
-    // 2. Check server API if running in fullstack mode (with JSON guard)
+    // 2. Check custom updated credentials saved in localStorage
+    try {
+      const savedCreds = localStorage.getItem('admin_credentials');
+      if (savedCreds) {
+        const creds = JSON.parse(savedCreds);
+        const validU = (creds.username || 'admin').trim().toLowerCase();
+        const validP = (creds.password || 'password').trim();
+        if (u === validU && p === validP) {
+          try { localStorage.setItem('adminToken', 'static-admin-token'); } catch (e) {}
+          setToken('static-admin-token');
+          return;
+        }
+      }
+    } catch (e) {}
+
+    // 3. Check server API if running in fullstack mode (with JSON guard)
     try {
       const res = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: u, password: p })
+        body: JSON.stringify({ username: username.trim(), password: p })
       });
       const ct = res.headers.get('content-type');
       if (res.ok && ct && ct.includes('application/json')) {
@@ -56,24 +83,11 @@ function AdminLogin({ setToken }: { setToken: (t: string) => void }) {
       // Static host fallback
     }
 
-    // 3. Check custom updated credentials saved in localStorage
-    try {
-      const savedCreds = localStorage.getItem('admin_credentials');
-      if (savedCreds) {
-        const creds = JSON.parse(savedCreds);
-        if (creds.username && creds.password && u === creds.username && p === creds.password) {
-          try { localStorage.setItem('adminToken', 'static-admin-token'); } catch (e) {}
-          setToken('static-admin-token');
-          return;
-        }
-      }
-    } catch (e) {}
-
     setError('Invalid credentials');
   };
 
   return (
-    <div className="min-h-screen bg-bg-base text-text-main flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen bg-bg-base text-text-main flex items-center justify-center relative overflow-hidden p-4">
       <div className="absolute inset-0 z-0">
         <motion.div
           animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
@@ -92,9 +106,9 @@ function AdminLogin({ setToken }: { setToken: (t: string) => void }) {
         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         transition={{ duration: 0.8, ease: "easeOut" }}
         onSubmit={handleLogin}
-        className="w-full max-w-md p-10 bg-bg-panel/80 backdrop-blur-2xl border border-text-main/10 shadow-2xl relative z-10"
+        className="w-full max-w-md p-6 sm:p-10 bg-bg-panel/80 backdrop-blur-2xl border border-text-main/10 shadow-2xl relative z-10"
       >
-        <div className="mb-10 text-center">
+        <div className="mb-8 text-center">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -103,30 +117,50 @@ function AdminLogin({ setToken }: { setToken: (t: string) => void }) {
           >
             <Lock className="w-10 h-10 text-accent" />
           </motion.div>
-          <h1 className="text-3xl font-black uppercase tracking-[0.2em] mb-2">Admin Access</h1>
+          <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-[0.2em] mb-2">Admin Access</h1>
           <p className="text-text-main/60 font-sans tracking-widest text-xs uppercase">Secure Portal</p>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           <div className="relative">
             <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-main/40" />
             <input 
               type="text" 
               placeholder="USERNAME"
               value={username}
-              onChange={e => setUsername(e.target.value)}
+              onChange={e => {
+                setUsername(e.target.value);
+                if (error) setError('');
+              }}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               className="w-full bg-bg-base/50 border border-text-main/20 h-14 pl-12 pr-4 font-sans tracking-widest text-sm focus:border-accent outline-none transition-colors"
             />
           </div>
           <div className="relative">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-main/40" />
             <input 
-              type="password" 
+              type={showPassword ? "text" : "password"} 
               placeholder="PASSWORD"
               value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="w-full bg-bg-base/50 border border-text-main/20 h-14 pl-12 pr-4 font-sans tracking-widest text-sm focus:border-accent outline-none transition-colors"
+              onChange={e => {
+                setPassword(e.target.value);
+                if (error) setError('');
+              }}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              className="w-full bg-bg-base/50 border border-text-main/20 h-14 pl-12 pr-12 font-sans tracking-widest text-sm focus:border-accent outline-none transition-colors"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-text-main/40 hover:text-accent transition-colors"
+              title={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
           </div>
           
           <AnimatePresence>
@@ -135,7 +169,7 @@ function AdminLogin({ setToken }: { setToken: (t: string) => void }) {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="text-red-500 text-xs font-bold tracking-widest uppercase text-center"
+                className="text-red-500 text-xs font-bold tracking-widest uppercase text-center py-1"
               >
                 {error}
               </motion.div>
@@ -145,7 +179,7 @@ function AdminLogin({ setToken }: { setToken: (t: string) => void }) {
           <motion.button
             whileHover={{ scale: 1.02, backgroundColor: "var(--color-accent-hover)" }}
             whileTap={{ scale: 0.98 }}
-            className="w-full h-14 bg-accent text-white font-bold tracking-[0.2em] uppercase flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(242,125,38,0.3)] transition-all"
+            className="w-full h-14 bg-accent text-white font-bold tracking-[0.2em] uppercase flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(242,125,38,0.3)] transition-all mt-2"
             type="submit"
           >
             Enter <LogIn className="w-5 h-5" />
