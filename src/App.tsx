@@ -635,16 +635,14 @@ export default function App() {
 }
 
 function LandingScreen({ onEnter }: { onEnter?: () => void }) {
-  const [phase, setPhase] = useState<0 | 1 | 2>(0);
+  const [phase, setPhase] = useState<1 | 2>(1);
   const [isSlashFlattened, setIsSlashFlattened] = useState(false);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 1800);
-    const tSlash = setTimeout(() => setIsSlashFlattened(true), 2600);
-    const t2 = setTimeout(() => setPhase(2), 3800);
+    const tSlash = setTimeout(() => setIsSlashFlattened(true), 1400);
+    const t2 = setTimeout(() => setPhase(2), 2800);
 
     return () => {
-      clearTimeout(t1);
       clearTimeout(tSlash);
       clearTimeout(t2);
     };
@@ -654,14 +652,10 @@ function LandingScreen({ onEnter }: { onEnter?: () => void }) {
     <motion.div
       exit={{ opacity: 0, scale: 1.02, filter: 'blur(10px)', transition: { duration: 0.8, ease: [0.76, 0, 0.24, 1] } }}
       onClick={onEnter}
-      className="fixed inset-0 z-[100] flex flex-col justify-between overflow-hidden select-none cursor-pointer font-sans transition-colors duration-700"
-      style={{
-        backgroundColor: phase === 0 ? '#c8102e' : '#f4f1ea',
-        color: phase === 0 ? '#6a000e' : '#141414',
-      }}
+      className="fixed inset-0 z-[100] flex flex-col justify-between overflow-hidden select-none cursor-pointer font-sans bg-[#f4f1ea] text-[#141414]"
     >
       {/* --- HIGH-FASHION EDITORIAL NAVBAR --- */}
-      <div className={`w-full px-6 sm:px-12 py-5 flex justify-between items-center text-[10px] sm:text-xs font-mono uppercase tracking-[0.25em] z-40 border-b transition-colors duration-500 ${phase === 0 ? 'border-red-900/30 text-[#6a000e]' : 'border-black/10 text-black'}`}>
+      <div className="w-full px-6 sm:px-12 py-5 flex justify-between items-center text-[10px] sm:text-xs font-mono uppercase tracking-[0.25em] z-40 border-b border-black/10 text-black">
         <div className="flex items-center gap-8">
           <span className="font-bold hover:opacity-70 transition-opacity">ABOUT</span>
           <span className="hidden sm:inline font-bold opacity-60">PILLARS</span>
@@ -672,53 +666,16 @@ function LandingScreen({ onEnter }: { onEnter?: () => void }) {
           <span className="font-black tracking-[0.18em] text-xs sm:text-sm uppercase font-sans">
             APEX EXPEDITIONS
           </span>
-          <span className="text-[8px] font-mono tracking-normal text-[#c8102e] font-bold">26</span>
+          <span className="text-[8px] font-mono tracking-normal text-black/60 font-bold">26</span>
         </div>
 
         <div className="flex items-center gap-8">
           <span className="hidden sm:inline font-bold opacity-60">LINEAGE</span>
-          <span className="font-bold tracking-[0.25em] text-[#c8102e]">EXPLORE</span>
+          <span className="font-bold tracking-[0.25em] text-black">EXPLORE</span>
         </div>
       </div>
 
       <AnimatePresence mode="wait">
-        {/* --- PHASE 0: CRIMSON HERO CANVAS WITH MASSIVE EXTENDED TYPOGRAPHY --- */}
-        {phase === 0 && (
-          <motion.div
-            key="phase-0"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { duration: 0.6 } }}
-            className="absolute inset-0 flex flex-col justify-between p-6 sm:p-12 z-20 pointer-events-none bg-[#c8102e]"
-          >
-            {/* Moody Cinematic Image Overlay */}
-            <div className="absolute inset-0 opacity-25 mix-blend-multiply pointer-events-none">
-              <img
-                src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
-                alt="Mountain Silhouette"
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            {/* Corner Meta Tags */}
-            <div className="w-full flex justify-between items-center text-[10px] font-mono uppercase tracking-[0.35em] text-[#6a000e] pt-16 z-10">
-              <div>CREATIVE</div>
-              <div>STUDIO</div>
-            </div>
-
-            {/* Giant High-Impact Headline */}
-            <motion.div
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-              className="relative z-10 leading-[0.82] tracking-tighter uppercase font-black text-[#58000a] text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] select-none mb-4"
-            >
-              <div>THE ART OF</div>
-              <div className="text-[#6d000c]">DISCOVERY</div>
-            </motion.div>
-          </motion.div>
-        )}
-
         {/* --- PHASE 1: CREAM EDITORIAL DEFINITION CANVAS WITH DYNAMIC SLASH LINE --- */}
         {phase === 1 && (
           <motion.div
@@ -733,7 +690,7 @@ function LandingScreen({ onEnter }: { onEnter?: () => void }) {
               initial={{ scaleX: 0, rotate: -22, height: "16px", backgroundColor: "#000000" }}
               animate={
                 isSlashFlattened
-                  ? { scaleX: 1, rotate: 0, height: "2px", backgroundColor: "#c8102e" }
+                  ? { scaleX: 1, rotate: 0, height: "2px", backgroundColor: "#141414" }
                   : { scaleX: 1.1, rotate: -18, height: "14px", backgroundColor: "#000000" }
               }
               transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
@@ -753,7 +710,7 @@ function LandingScreen({ onEnter }: { onEnter?: () => void }) {
                   <span>MEANING</span>
                   <span>VV</span>
                 </div>
-                <h1 className="text-6xl sm:text-8xl md:text-9xl font-serif italic text-[#c8102e] tracking-tight leading-none">
+                <h1 className="text-6xl sm:text-8xl md:text-9xl font-serif italic text-black tracking-tight leading-none">
                   Apex
                 </h1>
                 <p className="text-xs sm:text-sm font-sans tracking-widest leading-relaxed uppercase opacity-80 max-w-sm font-medium pt-2">
@@ -772,7 +729,7 @@ function LandingScreen({ onEnter }: { onEnter?: () => void }) {
                   <span>CREATIVE</span>
                   <span>STUDIO</span>
                 </div>
-                <h1 className="text-6xl sm:text-8xl md:text-9xl font-serif italic text-[#c8102e] tracking-tight leading-none">
+                <h1 className="text-6xl sm:text-8xl md:text-9xl font-serif italic text-black tracking-tight leading-none">
                   Expedition
                 </h1>
                 <p className="text-xs sm:text-sm font-sans tracking-widest leading-relaxed uppercase opacity-80 max-w-sm font-medium pt-2">
@@ -818,7 +775,7 @@ function LandingScreen({ onEnter }: { onEnter?: () => void }) {
                 </div>
 
                 <div>
-                  <h2 className="text-3xl sm:text-5xl md:text-6xl font-serif italic mb-4 tracking-tight leading-tight text-red-500">
+                  <h2 className="text-3xl sm:text-5xl md:text-6xl font-serif italic mb-4 tracking-tight leading-tight text-white">
                     The Symphony of Summits
                   </h2>
 
@@ -832,7 +789,7 @@ function LandingScreen({ onEnter }: { onEnter?: () => void }) {
                     </span>
                   </div>
 
-                  <button className="mt-4 px-8 py-2.5 bg-white text-black group-hover:bg-[#c8102e] group-hover:text-white font-mono text-[10px] font-bold uppercase tracking-[0.3em] rounded-full transition-all duration-300 shadow-xl flex items-center gap-3">
+                  <button className="mt-4 px-8 py-2.5 bg-white text-black group-hover:bg-amber-400 font-mono text-[10px] font-bold uppercase tracking-[0.3em] rounded-full transition-all duration-300 shadow-xl flex items-center gap-3">
                     <span>EXPLORE</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
@@ -870,7 +827,7 @@ function LandingScreen({ onEnter }: { onEnter?: () => void }) {
                     Stand Up To The Savage Peak
                   </h2>
 
-                  <button className="mt-6 px-8 py-2.5 bg-white text-black group-hover:bg-[#c8102e] group-hover:text-white font-mono text-[10px] font-bold uppercase tracking-[0.3em] rounded-full transition-all duration-300 shadow-xl flex items-center gap-3">
+                  <button className="mt-6 px-8 py-2.5 bg-white text-black group-hover:bg-amber-400 font-mono text-[10px] font-bold uppercase tracking-[0.3em] rounded-full transition-all duration-300 shadow-xl flex items-center gap-3">
                     <span>EXPLORE</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
@@ -882,24 +839,24 @@ function LandingScreen({ onEnter }: { onEnter?: () => void }) {
       </AnimatePresence>
 
       {/* --- BOTTOM CONTROLS & PHASE DOT INDICATORS --- */}
-      <div className={`w-full px-6 sm:px-12 py-4 flex justify-between items-center text-[10px] font-mono uppercase tracking-[0.25em] z-40 transition-colors duration-500 ${phase === 0 ? 'text-[#6a000e]' : 'text-black/60'}`}>
-        <div>PHASE :: 0{phase + 1} / 03</div>
+      <div className="w-full px-6 sm:px-12 py-4 flex justify-between items-center text-[10px] font-mono uppercase tracking-[0.25em] z-40 text-black/60">
+        <div>PHASE :: 0{phase} / 02</div>
 
         {/* Interactive Phase Dots */}
         <div className="flex items-center gap-2">
-          {[0, 1, 2].map((p) => (
+          {[1, 2].map((p) => (
             <button
               key={p}
               onClick={(e) => {
                 e.stopPropagation();
-                setPhase(p as 0 | 1 | 2);
+                setPhase(p as 1 | 2);
               }}
-              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${phase === p ? 'bg-[#c8102e] scale-125' : 'bg-black/20 hover:bg-black/40'}`}
+              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${phase === p ? 'bg-black scale-125' : 'bg-black/20 hover:bg-black/40'}`}
             />
           ))}
         </div>
 
-        <div className="font-bold text-[#c8102e] animate-pulse">
+        <div className="font-bold text-black animate-pulse">
           [ CLICK TO ENTER ]
         </div>
       </div>
