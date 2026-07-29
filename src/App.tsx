@@ -148,7 +148,7 @@ export default function App() {
   }, [isMuted, isLoaded, activeIndex]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoaded(true), 2000);
+    const timer = setTimeout(() => setIsLoaded(true), 4500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -635,151 +635,273 @@ export default function App() {
 }
 
 function LandingScreen({ onEnter }: { onEnter?: () => void }) {
-  const [percent, setPercent] = useState(0);
+  const [phase, setPhase] = useState<0 | 1 | 2>(0);
+  const [isSlashFlattened, setIsSlashFlattened] = useState(false);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setPercent(prev => {
-        if (prev >= 100) {
-          clearInterval(timer);
-          return 100;
-        }
-        return prev + Math.floor(Math.random() * 6 + 4);
-      });
-    }, 60);
-    return () => clearInterval(timer);
-  }, []);
+    const t1 = setTimeout(() => setPhase(1), 1800);
+    const tSlash = setTimeout(() => setIsSlashFlattened(true), 2600);
+    const t2 = setTimeout(() => setPhase(2), 3800);
 
-  const titleWords = ["APEX", "EXPEDITIONS"];
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(tSlash);
+      clearTimeout(t2);
+    };
+  }, []);
 
   return (
     <motion.div
-      exit={{ y: "-100%", transition: { duration: 1.2, ease: [0.76, 0, 0.24, 1] } }}
+      exit={{ opacity: 0, scale: 1.02, filter: 'blur(10px)', transition: { duration: 0.8, ease: [0.76, 0, 0.24, 1] } }}
       onClick={onEnter}
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-between bg-bg-base text-text-main p-8 overflow-hidden select-none cursor-pointer"
+      className="fixed inset-0 z-[100] flex flex-col justify-between overflow-hidden select-none cursor-pointer font-sans transition-colors duration-700"
+      style={{
+        backgroundColor: phase === 0 ? '#c8102e' : '#f4f1ea',
+        color: phase === 0 ? '#6a000e' : '#141414',
+      }}
     >
-      {/* Background Cybernetic Grid & Glowing Pulse */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(242,125,38,0.12)_0%,_transparent_65%)] pointer-events-none" />
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none opacity-40" />
-
-      {/* Floating Particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
-        {[...Array(24)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute bg-accent rounded-full shadow-[0_0_8px_rgba(242,125,38,0.8)]"
-            style={{
-              width: Math.random() * 3 + 1,
-              height: Math.random() * 3 + 1,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [0, -120, 0],
-              x: [0, (Math.random() - 0.5) * 40, 0],
-              opacity: [0.1, 0.9, 0.1],
-              scale: [0.5, 1.5, 0.5]
-            }}
-            transition={{
-              duration: Math.random() * 4 + 3,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Top Telemetry Header */}
-      <div className="w-full max-w-7xl flex justify-between items-center text-[10px] font-sans uppercase tracking-[0.3em] text-text-main/50 relative z-10 pt-4">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-accent animate-ping" />
-          <span>SYSTEM INIT :: OK</span>
+      {/* --- HIGH-FASHION EDITORIAL NAVBAR --- */}
+      <div className={`w-full px-6 sm:px-12 py-5 flex justify-between items-center text-[10px] sm:text-xs font-mono uppercase tracking-[0.25em] z-40 border-b transition-colors duration-500 ${phase === 0 ? 'border-red-900/30 text-[#6a000e]' : 'border-black/10 text-black'}`}>
+        <div className="flex items-center gap-8">
+          <span className="font-bold hover:opacity-70 transition-opacity">ABOUT</span>
+          <span className="hidden sm:inline font-bold opacity-60">PILLARS</span>
         </div>
-        <div className="hidden sm:block tracking-[0.4em]">LAT 27°58′55″N  •  LON 86°55′30″E</div>
-        <div>VER 3.0</div>
+
+        {/* Center Brand Logo */}
+        <div className="flex items-center gap-1">
+          <span className="font-black tracking-[0.18em] text-xs sm:text-sm uppercase font-sans">
+            APEX EXPEDITIONS
+          </span>
+          <span className="text-[8px] font-mono tracking-normal text-[#c8102e] font-bold">26</span>
+        </div>
+
+        <div className="flex items-center gap-8">
+          <span className="hidden sm:inline font-bold opacity-60">LINEAGE</span>
+          <span className="font-bold tracking-[0.25em] text-[#c8102e]">EXPLORE</span>
+        </div>
       </div>
 
-      {/* Center Astrolabe HUD & Typography */}
-      <motion.div 
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 1, ease: "easeOut" }}
-        className="flex flex-col items-center relative z-10 my-auto"
-      >
-        {/* Astrolabe HUD Ring Assembly */}
-        <div className="relative w-40 h-40 md:w-52 md:h-52 flex items-center justify-center mb-8">
-          {/* Outer Ring Clockwise */}
+      <AnimatePresence mode="wait">
+        {/* --- PHASE 0: CRIMSON HERO CANVAS WITH MASSIVE EXTENDED TYPOGRAPHY --- */}
+        {phase === 0 && (
           <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-            className="absolute inset-0 rounded-full border border-dashed border-accent/40"
-          />
-          {/* Middle Ring Counter-Clockwise */}
-          <motion.div
-            animate={{ rotate: -360 }}
-            transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
-            className="absolute inset-3 rounded-full border border-text-main/15 border-t-accent border-r-accent/50"
-          />
-          {/* Inner Accent Ring */}
-          <motion.div
-            animate={{ scale: [0.95, 1.05, 0.95] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute inset-8 rounded-full border border-accent/20 bg-accent/5 backdrop-blur-xs flex items-center justify-center"
-          />
-          {/* Center Compass Icon */}
-          <motion.div
-            animate={{ rotate: [0, 8, -8, 0] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="relative z-10"
+            key="phase-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.6 } }}
+            className="absolute inset-0 flex flex-col justify-between p-6 sm:p-12 z-20 pointer-events-none bg-[#c8102e]"
           >
-            <Compass className="w-14 h-14 md:w-18 md:h-18 text-accent drop-shadow-[0_0_20px_rgba(242,125,38,0.7)]" />
-          </motion.div>
-        </div>
+            {/* Moody Cinematic Image Overlay */}
+            <div className="absolute inset-0 opacity-25 mix-blend-multiply pointer-events-none">
+              <img
+                src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
+                alt="Mountain Silhouette"
+                className="w-full h-full object-cover"
+              />
+            </div>
 
-        {/* Staggered Title Reveal */}
-        <div className="flex gap-4 overflow-hidden mb-2">
-          {titleWords.map((word, wIdx) => (
-            <motion.span
-              key={wIdx}
-              initial={{ y: 50, opacity: 0, filter: 'blur(10px)' }}
-              animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
-              transition={{ delay: 0.2 + wIdx * 0.2, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-              className="text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-[0.3em] text-text-main"
+            {/* Corner Meta Tags */}
+            <div className="w-full flex justify-between items-center text-[10px] font-mono uppercase tracking-[0.35em] text-[#6a000e] pt-16 z-10">
+              <div>CREATIVE</div>
+              <div>STUDIO</div>
+            </div>
+
+            {/* Giant High-Impact Headline */}
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+              className="relative z-10 leading-[0.82] tracking-tighter uppercase font-black text-[#58000a] text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] select-none mb-4"
             >
-              {word}
-            </motion.span>
+              <div>THE ART OF</div>
+              <div className="text-[#6d000c]">DISCOVERY</div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* --- PHASE 1: CREAM EDITORIAL DEFINITION CANVAS WITH DYNAMIC SLASH LINE --- */}
+        {phase === 1 && (
+          <motion.div
+            key="phase-1"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.6 } }}
+            className="relative w-full h-full flex flex-col justify-center px-6 sm:px-16 md:px-24 z-20 bg-[#f4f1ea] text-[#141414]"
+          >
+            {/* Dynamic Morphing Slash / Line */}
+            <motion.div
+              initial={{ scaleX: 0, rotate: -22, height: "16px", backgroundColor: "#000000" }}
+              animate={
+                isSlashFlattened
+                  ? { scaleX: 1, rotate: 0, height: "2px", backgroundColor: "#c8102e" }
+                  : { scaleX: 1.1, rotate: -18, height: "14px", backgroundColor: "#000000" }
+              }
+              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+              className="absolute left-[5%] right-[5%] top-1/2 origin-center pointer-events-none z-10 shadow-md"
+            />
+
+            {/* Dual Column Definitions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-32 items-center relative z-20">
+              {/* Left Column: Apex */}
+              <motion.div
+                initial={{ x: -40, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.15 }}
+                className="flex flex-col gap-3"
+              >
+                <div className="flex justify-between items-center text-[10px] font-mono tracking-[0.3em] uppercase opacity-40 border-b border-black/10 pb-2">
+                  <span>MEANING</span>
+                  <span>VV</span>
+                </div>
+                <h1 className="text-6xl sm:text-8xl md:text-9xl font-serif italic text-[#c8102e] tracking-tight leading-none">
+                  Apex
+                </h1>
+                <p className="text-xs sm:text-sm font-sans tracking-widest leading-relaxed uppercase opacity-80 max-w-sm font-medium pt-2">
+                  TO EVOKE A SENSE OF CURIOSITY, FASCINATION, OR DESIRE TO UNDERSTAND AND EXPLORE UNTOUCHED SUMMITS.
+                </p>
+              </motion.div>
+
+              {/* Right Column: Expedition */}
+              <motion.div
+                initial={{ x: 40, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+                className="flex flex-col gap-3 md:pt-20"
+              >
+                <div className="flex justify-between items-center text-[10px] font-mono tracking-[0.3em] uppercase opacity-40 border-b border-black/10 pb-2">
+                  <span>CREATIVE</span>
+                  <span>STUDIO</span>
+                </div>
+                <h1 className="text-6xl sm:text-8xl md:text-9xl font-serif italic text-[#c8102e] tracking-tight leading-none">
+                  Expedition
+                </h1>
+                <p className="text-xs sm:text-sm font-sans tracking-widest leading-relaxed uppercase opacity-80 max-w-sm font-medium pt-2">
+                  TO PROVIDE AN UNFILTERED AND GENUINE PORTRAYAL OF NATURE, CONNECTING WITH RAW HUMAN ENDURANCE.
+                </p>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* --- PHASE 2: DUAL VERTICAL SPLIT SCREEN (VOYEUR VÉRITÉ STYLE 50/50 CARDS) --- */}
+        {phase === 2 && (
+          <motion.div
+            key="phase-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8 }}
+            className="absolute inset-0 pt-16 flex flex-col md:flex-row z-20 bg-[#f4f1ea]"
+          >
+            {/* Left Vertical Film Card */}
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onEnter) onEnter();
+              }}
+              className="group relative flex-1 h-1/2 md:h-full overflow-hidden border-b md:border-b-0 md:border-r border-black/10 cursor-pointer"
+            >
+              <img
+                src="https://images.unsplash.com/photo-1522163182402-834f871fd851?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"
+                alt="Everest Film"
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-out"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+              {/* Card Meta */}
+              <div className="relative z-10 p-6 sm:p-10 h-full flex flex-col justify-between text-white">
+                <div className="flex justify-between items-start text-[10px] font-mono tracking-[0.3em] uppercase">
+                  <span className="opacity-70">FILM :: 001</span>
+                  <span className="opacity-70">08,848M</span>
+                </div>
+
+                <div>
+                  <h2 className="text-3xl sm:text-5xl md:text-6xl font-serif italic mb-4 tracking-tight leading-tight text-red-500">
+                    The Symphony of Summits
+                  </h2>
+
+                  {/* Festival Laurel Badge */}
+                  <div className="flex items-center gap-3 my-4 opacity-90">
+                    <div className="w-6 h-6 border border-amber-400/60 rounded-full flex items-center justify-center text-[10px]">
+                      🏆
+                    </div>
+                    <span className="text-[9px] font-mono tracking-[0.25em] uppercase text-amber-300">
+                      OFFICIAL SELECTION 2026 TIBET FILM FESTIVAL
+                    </span>
+                  </div>
+
+                  <button className="mt-4 px-8 py-2.5 bg-white text-black group-hover:bg-[#c8102e] group-hover:text-white font-mono text-[10px] font-bold uppercase tracking-[0.3em] rounded-full transition-all duration-300 shadow-xl flex items-center gap-3">
+                    <span>EXPLORE</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right Vertical Film Card */}
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onEnter) onEnter();
+              }}
+              className="group relative flex-1 h-1/2 md:h-full overflow-hidden cursor-pointer"
+            >
+              <img
+                src="https://images.unsplash.com/photo-1528892677828-8862216f3665?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"
+                alt="K2 Film"
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-out"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+              {/* Card Meta */}
+              <div className="relative z-10 p-6 sm:p-10 h-full flex flex-col justify-between text-white">
+                <div className="flex justify-between items-start text-[10px] font-mono tracking-[0.3em] uppercase">
+                  <span className="opacity-70">FILM :: 002</span>
+                  <span className="opacity-70">08,611M</span>
+                </div>
+
+                <div>
+                  <h2 className="text-3xl sm:text-5xl md:text-6xl font-serif italic mb-4 tracking-tight leading-tight text-white">
+                    Stand Up To The Savage Peak
+                  </h2>
+
+                  <button className="mt-6 px-8 py-2.5 bg-white text-black group-hover:bg-[#c8102e] group-hover:text-white font-mono text-[10px] font-bold uppercase tracking-[0.3em] rounded-full transition-all duration-300 shadow-xl flex items-center gap-3">
+                    <span>EXPLORE</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* --- BOTTOM CONTROLS & PHASE DOT INDICATORS --- */}
+      <div className={`w-full px-6 sm:px-12 py-4 flex justify-between items-center text-[10px] font-mono uppercase tracking-[0.25em] z-40 transition-colors duration-500 ${phase === 0 ? 'text-[#6a000e]' : 'text-black/60'}`}>
+        <div>PHASE :: 0{phase + 1} / 03</div>
+
+        {/* Interactive Phase Dots */}
+        <div className="flex items-center gap-2">
+          {[0, 1, 2].map((p) => (
+            <button
+              key={p}
+              onClick={(e) => {
+                e.stopPropagation();
+                setPhase(p as 0 | 1 | 2);
+              }}
+              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${phase === p ? 'bg-[#c8102e] scale-125' : 'bg-black/20 hover:bg-black/40'}`}
+            />
           ))}
         </div>
 
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7, duration: 1 }}
-          className="text-xs md:text-sm tracking-[0.4em] text-text-main/60 uppercase font-sans font-bold"
-        >
-          Earth's Most Extraordinary Frontiers
-        </motion.p>
-
-        {/* Progress Bar & Percentage */}
-        <div className="w-64 sm:w-80 mt-10 flex flex-col items-center gap-3">
-          <div className="w-full h-[2px] bg-text-main/15 relative overflow-hidden rounded-full">
-            <motion.div
-              className="h-full bg-accent shadow-[0_0_12px_rgba(242,125,38,1)]"
-              style={{ width: `${percent}%` }}
-              transition={{ duration: 0.1 }}
-            />
-          </div>
-          <div className="w-full flex justify-between items-center text-xs font-mono tracking-widest text-text-main/70">
-            <span className="uppercase text-[10px] text-accent font-bold">CALIBRATING DISCOVERY</span>
-            <span className="font-bold text-accent">{percent < 100 ? `${percent.toString().padStart(3, '0')}%` : '100% READY'}</span>
-          </div>
+        <div className="font-bold text-[#c8102e] animate-pulse">
+          [ CLICK TO ENTER ]
         </div>
-      </motion.div>
-
-      {/* Bottom Shutter Accent Line */}
-      <div className="w-full max-w-7xl flex justify-between items-center text-[10px] font-sans uppercase tracking-[0.3em] text-text-main/40 pb-4 border-t border-text-main/10 pt-4 relative z-10">
-        <div>3D TELEMETRY & CLIMATE RADAR</div>
-        <div className="hidden sm:block text-accent font-bold">CLICK OR SCROLL TO EXPLORE</div>
       </div>
     </motion.div>
   );
