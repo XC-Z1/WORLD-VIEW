@@ -1,5 +1,5 @@
 import { motion, useScroll, useTransform, AnimatePresence, useInView } from 'motion/react';
-import { Mountain, Compass, Wind, ThermometerSnowflake, Users, Map, MoreVertical, ExternalLink, TreePine, Waves, CloudRain, Volume2, VolumeX, Search, ArrowDown } from 'lucide-react';
+import { Mountain, Compass, Wind, ThermometerSnowflake, Users, Map, MoreVertical, ExternalLink, TreePine, Waves, CloudRain, Volume2, VolumeX, Search, ArrowDown, ArrowUp } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
 import { destinations as defaultDestinations } from './destinations';
 
@@ -84,7 +84,33 @@ export default function App() {
   const [isMuted, setIsMuted] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [heroMousePos, setHeroMousePos] = useState({ x: 50, y: 50 });
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > window.innerHeight * 0.7) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleHeroMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setHeroMousePos({ x, y });
+  };
 
   useEffect(() => {
     fetch('/api/destinations')
@@ -122,7 +148,7 @@ export default function App() {
   }, [isMuted, isLoaded, activeIndex]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoaded(true), 2500);
+    const timer = setTimeout(() => setIsLoaded(true), 3200);
     return () => clearTimeout(timer);
   }, []);
 
@@ -345,8 +371,20 @@ export default function App() {
           className="contents"
         >
           {/* Hero Section */}
-          <section className="relative h-screen flex items-center justify-center overflow-hidden border-b border-text-main/10 bg-bg-base">
+          <section 
+            onMouseMove={handleHeroMouseMove}
+            className="relative h-screen flex items-center justify-center overflow-hidden border-b border-text-main/10 bg-bg-base"
+          >
             <Particles />
+
+            {/* Mouse Spotlight Glow */}
+            <div 
+              className="absolute inset-0 pointer-events-none z-10 transition-opacity duration-500"
+              style={{
+                background: `radial-gradient(700px circle at ${heroMousePos.x}% ${heroMousePos.y}%, rgba(242, 125, 38, 0.14), transparent 75%)`
+              }}
+            />
+
             <motion.div 
               style={{ y, opacity: opacityHero }}
               className="absolute inset-0 z-0 opacity-40"
@@ -371,21 +409,26 @@ export default function App() {
               )}
             </motion.div>
 
-            <div className="relative z-20 w-full px-8 md:px-16 max-w-7xl mx-auto flex flex-col justify-end h-full pb-32">
+            <div className="relative z-20 w-full px-8 md:px-16 max-w-7xl mx-auto flex flex-col justify-end h-full pb-24 md:pb-32">
               <motion.div
                 style={{ y: textY }}
                 initial={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
                 animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
                 transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
               >
-                <motion.p 
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.5, duration: 1 }}
-                  className="text-accent font-sans font-bold text-xs md:text-sm uppercase tracking-[0.3em] mb-4 md:mb-6"
+                {/* Floating Telemetry Badge */}
+                <motion.div 
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.8 }}
+                  className="inline-flex items-center gap-3 px-4 py-2 mb-6 bg-bg-panel/70 backdrop-blur-md border border-accent/30 rounded-full shadow-[0_0_20px_rgba(242,125,38,0.2)]"
                 >
-                  {dest.zoneTitle}
-                </motion.p>
+                  <span className="w-2 h-2 rounded-full bg-accent animate-ping" />
+                  <span className="text-accent font-sans font-bold text-[11px] uppercase tracking-[0.25em]">
+                    {dest.zoneTitle} • {dest.elevationMeters}
+                  </span>
+                </motion.div>
+
                 <h1 className="text-6xl md:text-[9rem] font-black uppercase leading-[0.85] tracking-tighter mb-4 text-text-main drop-shadow-2xl">
                   {dest.name}<br/>
                   <motion.span 
@@ -397,7 +440,7 @@ export default function App() {
                     {dest.subtitle}
                   </motion.span>
                 </h1>
-                <div className="max-w-xl mt-12 border-l border-accent pl-8">
+                <div className="max-w-xl mt-8 md:mt-12 border-l-2 border-accent pl-6 md:pl-8">
                   <motion.p 
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -412,14 +455,17 @@ export default function App() {
               <motion.div
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 2, duration: 1.5, ease: "easeOut" }}
-                className="absolute bottom-12 right-8 md:right-32 flex items-center gap-4 hidden sm:flex mix-blend-screen"
+                transition={{ delay: 1.8, duration: 1.5, ease: "easeOut" }}
+                className="absolute bottom-12 right-8 md:right-16 flex items-center gap-4 hidden sm:flex mix-blend-screen"
               >
-                <span className="text-xs font-sans uppercase tracking-[0.4em] text-text-main/60 font-bold">Discover</span>
+                <div className="flex flex-col items-end text-right font-sans text-[10px] tracking-[0.3em] uppercase text-text-main/60">
+                  <span className="font-bold text-accent">EXPLORE ARCHIVE</span>
+                  <span>{dest.location}</span>
+                </div>
                 <motion.div 
-                  animate={{ scaleX: [1, 2, 1] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  className="w-16 h-[1px] bg-text-main/40 origin-left" 
+                  animate={{ scaleX: [1, 1.8, 1] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                  className="w-12 h-[2px] bg-accent origin-left shadow-[0_0_8px_rgba(242,125,38,0.8)]" 
                 />
               </motion.div>
             </div>
@@ -564,23 +610,75 @@ export default function App() {
       
       {/* Background Audio */}
       <audio ref={audioRef} src={audioSources[dest.type]} loop />
+
+      {/* Floating Scroll to Top Button */}
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.6, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.6, y: 20 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={scrollToTop}
+            className="fixed bottom-8 right-8 z-50 w-12 h-12 bg-accent text-white border border-white/20 rounded-full shadow-[0_0_25px_rgba(242,125,38,0.6)] flex items-center justify-center transition-all group cursor-pointer"
+            title="Back to Top"
+            aria-label="Back to Top"
+          >
+            <ArrowUp className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
     </>
   );
 }
 
 function LandingScreen() {
+  const [percent, setPercent] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPercent(prev => {
+        if (prev >= 100) {
+          clearInterval(timer);
+          return 100;
+        }
+        return prev + Math.floor(Math.random() * 6 + 3);
+      });
+    }, 45);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Calculate live simulated elevation based on progress % (0m to 8848m)
+  const currentElevation = Math.floor((percent / 100) * 8848);
+
+  const getTelemetryStatus = (p: number) => {
+    if (p < 25) return "CALIBRATING GEOSPATIAL RADAR";
+    if (p < 55) return "RENDERING TOPOGRAPHIC MESH";
+    if (p < 85) return "SYNCHRONIZING SATELLITE TELEMETRY";
+    return "EXPEDITION VECTOR LOCK :: READY";
+  };
+
+  const titleWords = ["APEX", "EXPEDITIONS"];
+
   return (
     <motion.div
       initial={{ opacity: 1 }}
-      exit={{ opacity: 0, y: "-100%", transition: { duration: 1, ease: [0.22, 1, 0.36, 1] } }}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-bg-base text-text-main"
+      exit={{ opacity: 0, scale: 1.04, filter: 'blur(10px)', transition: { duration: 1, ease: [0.76, 0, 0.24, 1] } }}
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-between bg-[#070a0f] text-white p-6 sm:p-10 overflow-hidden select-none"
     >
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
-        {[...Array(15)].map((_, i) => (
+      {/* Dynamic Background Radial Lens Flares & Cybernetic Grid */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,_rgba(242,125,38,0.18)_0%,_transparent_60%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,_rgba(56,189,248,0.08)_0%,_transparent_50%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:3.5rem_3.5rem] pointer-events-none opacity-30" />
+
+      {/* Atmospheric Dust & Particle Motes */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(30)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute bg-text-main rounded-full"
+            className="absolute rounded-full bg-accent shadow-[0_0_12px_rgba(242,125,38,0.9)]"
             style={{
               width: Math.random() * 3 + 1,
               height: Math.random() * 3 + 1,
@@ -588,52 +686,127 @@ function LandingScreen() {
               top: `${Math.random() * 100}%`,
             }}
             animate={{
-              y: [0, -30, 0],
-              opacity: [0.2, 0.8, 0.2],
+              y: [0, -140, 0],
+              x: [0, (Math.random() - 0.5) * 50, 0],
+              opacity: [0.1, 0.85, 0.1],
+              scale: [0.4, 1.4, 0.4]
             }}
             transition={{
-              duration: Math.random() * 3 + 2,
+              duration: Math.random() * 4 + 3,
               repeat: Infinity,
               ease: "easeInOut",
             }}
           />
         ))}
       </div>
-      <motion.div 
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 1.5, ease: "easeOut" }}
-        className="flex flex-col items-center relative z-10"
-      >
-        <motion.div
-          animate={{ rotate: [0, 5, -5, 0] }} 
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <Compass className="w-16 h-16 mb-8 text-accent drop-shadow-[0_0_15px_rgba(242,125,38,0.5)]" />
-        </motion.div>
-        <motion.h1 
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.5, duration: 1 }}
-          className="text-2xl md:text-3xl tracking-[0.5em] uppercase font-bold text-center px-4"
-        >
-          Earth's Wonders
-        </motion.h1>
-        <motion.div 
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ delay: 1, duration: 1, ease: "easeInOut" }}
-          className="w-full max-w-[200px] h-px bg-accent mt-6 origin-center"
-        />
+
+      {/* Top Telemetry Header */}
+      <div className="w-full max-w-7xl flex justify-between items-center text-[10px] sm:text-xs font-mono uppercase tracking-[0.3em] text-white/50 relative z-10 pt-2 border-b border-white/10 pb-4">
+        <div className="flex items-center gap-2.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-accent animate-ping" />
+          <span className="font-bold text-accent tracking-widest">SATELLITE RADAR :: ACTIVE</span>
+        </div>
+        <div className="hidden md:block tracking-[0.4em] text-white/60 font-semibold">
+          ELEVATION TELEMETRY :: <span className="text-accent">{currentElevation.toLocaleString()}M</span>
+        </div>
+        <div className="font-semibold text-white/70">APEX v3.4 ARCHIVE</div>
+      </div>
+
+      {/* Centerpiece HUD & Mountain Vector Assembly */}
+      <div className="relative z-10 my-auto flex flex-col items-center text-center max-w-2xl w-full">
+        {/* Multi-layered Rotating Astrolabe HUD Ring */}
+        <div className="relative w-52 h-52 sm:w-64 sm:h-64 md:w-72 md:h-72 flex items-center justify-center mb-6">
+          {/* Outer Compass Degree Tick Ring */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-0 rounded-full border border-dashed border-accent/40 shadow-[0_0_30px_rgba(242,125,38,0.15)]"
+          />
+          {/* Middle Counter-Rotating Ring with Accent Highlights */}
+          <motion.div
+            animate={{ rotate: -360 }}
+            transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-4 sm:inset-5 rounded-full border border-white/15 border-t-accent border-r-sky-400"
+          />
+          {/* Inner Glowing Radar Scanner Line */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-10 sm:inset-12 rounded-full bg-gradient-to-tr from-accent/20 via-transparent to-transparent opacity-80"
+          />
+          {/* Pulsing Central Glass Shield */}
+          <motion.div
+            animate={{ scale: [0.96, 1.04, 0.96] }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute inset-12 sm:inset-14 rounded-full border border-accent/30 bg-accent/10 backdrop-blur-md flex items-center justify-center shadow-[inset_0_0_20px_rgba(242,125,38,0.2)]"
+          />
+
+          {/* Central Animated Vector Summit Icon */}
+          <motion.div
+            animate={{ rotate: [0, 6, -6, 0] }}
+            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+            className="relative z-10 flex flex-col items-center"
+          >
+            <Compass className="w-16 h-16 sm:w-20 sm:h-20 text-accent drop-shadow-[0_0_25px_rgba(242,125,38,0.9)]" />
+            <span className="text-[9px] font-mono tracking-[0.3em] uppercase text-accent font-bold mt-1">
+              {currentElevation}M ALT
+            </span>
+          </motion.div>
+        </div>
+
+        {/* Cinematic Title Reveal */}
+        <div className="flex gap-3 sm:gap-5 overflow-hidden mb-2">
+          {titleWords.map((word, wIdx) => (
+            <motion.span
+              key={wIdx}
+              initial={{ y: 60, opacity: 0, filter: 'blur(12px)' }}
+              animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+              transition={{ delay: 0.2 + wIdx * 0.2, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+              className="text-4xl sm:text-5xl md:text-6xl font-black uppercase tracking-[0.25em] text-white drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]"
+            >
+              {word}
+            </motion.span>
+          ))}
+        </div>
+
+        {/* Glowing Subtitle Sweep */}
         <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5, duration: 1 }}
-          className="mt-6 text-sm tracking-widest text-text-main/60 uppercase"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 1 }}
+          className="text-xs sm:text-sm tracking-[0.45em] text-accent uppercase font-sans font-extrabold mb-8 drop-shadow-md"
         >
-          Discover The Extraordinary
+          Earth's Most Extraordinary Frontiers
         </motion.p>
-      </motion.div>
+
+        {/* High-Precision Laser Telemetry Progress Gauge */}
+        <div className="w-full max-w-md bg-white/5 border border-white/10 p-4 rounded-xl backdrop-blur-md shadow-2xl">
+          <div className="flex justify-between items-center text-xs font-mono tracking-widest text-white/80 mb-2">
+            <span className="text-[10px] font-bold text-accent uppercase tracking-[0.2em] animate-pulse">
+              {getTelemetryStatus(percent)}
+            </span>
+            <span className="font-bold text-accent text-sm">{percent}%</span>
+          </div>
+
+          <div className="w-full h-2.5 bg-black/60 rounded-full overflow-hidden p-0.5 border border-white/10 relative">
+            <motion.div
+              className="h-full bg-gradient-to-r from-accent via-orange-400 to-amber-300 rounded-full shadow-[0_0_15px_rgba(242,125,38,1)] transition-all duration-100"
+              style={{ width: `${percent}%` }}
+            />
+          </div>
+
+          <div className="flex justify-between items-center text-[10px] font-mono text-white/40 mt-2.5 tracking-wider">
+            <span>27°58′55″N  86°55′30″E</span>
+            <span>TARGET: SUMMIT ARCHIVE</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Telemetry Footer */}
+      <div className="w-full max-w-7xl flex justify-between items-center text-[10px] font-mono uppercase tracking-[0.3em] text-white/40 pt-4 border-t border-white/10 relative z-10">
+        <div>3D TOPOGRAPHY & RADAR DISCOVERY</div>
+        <div className="hidden sm:block text-accent font-bold">READY TO EXPLORE</div>
+      </div>
     </motion.div>
   );
 }
