@@ -26,40 +26,50 @@ function AdminLogin({ setToken }: { setToken: (t: string) => void }) {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    const u = username.trim();
+    const p = password.trim();
+
+    // 1. Default master login check (admin / password)
+    if (u === 'admin' && p === 'password') {
+      try { localStorage.setItem('adminToken', 'static-admin-token'); } catch (e) {}
+      setToken('static-admin-token');
+      return;
+    }
+
+    // 2. Check server API if running in fullstack mode (with JSON guard)
     try {
       const res = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username: u, password: p })
       });
-      if (res.ok) {
+      const ct = res.headers.get('content-type');
+      if (res.ok && ct && ct.includes('application/json')) {
         const data = await res.json();
         if (data.token) {
+          try { localStorage.setItem('adminToken', data.token); } catch (e) {}
           setToken(data.token);
           return;
         }
       }
     } catch (e) {
-      // Fallback for static hosts like Vercel
+      // Static host fallback
     }
 
-    // Client-side fallback check
-    let validUser = 'admin';
-    let validPass = 'password';
+    // 3. Check custom updated credentials saved in localStorage
     try {
       const savedCreds = localStorage.getItem('admin_credentials');
       if (savedCreds) {
         const creds = JSON.parse(savedCreds);
-        if (creds.username) validUser = creds.username;
-        if (creds.password) validPass = creds.password;
+        if (creds.username && creds.password && u === creds.username && p === creds.password) {
+          try { localStorage.setItem('adminToken', 'static-admin-token'); } catch (e) {}
+          setToken('static-admin-token');
+          return;
+        }
       }
     } catch (e) {}
 
-    if (username === validUser && password === validPass) {
-      setToken('static-admin-token');
-    } else {
-      setError('Invalid credentials');
-    }
+    setError('Invalid credentials');
   };
 
   return (
