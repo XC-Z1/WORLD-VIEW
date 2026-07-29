@@ -1,4 +1,4 @@
-import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
+import { motion, useScroll, useTransform, AnimatePresence, useInView } from 'motion/react';
 import { Mountain, Compass, Wind, ThermometerSnowflake, Users, Map, MoreVertical, ExternalLink, TreePine, Waves, CloudRain, Volume2, VolumeX, Search, ArrowDown } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
 import { destinations as defaultDestinations } from './destinations';
@@ -681,30 +681,34 @@ function FactCard({ icon, title, value, desc, tooltip, className = "" }: { icon:
 
 function ParallaxHistoryImage({ src, alt }: { src: string; alt: string }) {
   const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: false, amount: 0.15 });
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], ["-20%", "20%"]);
+  const parallaxY = useTransform(scrollYProgress, [0, 1], ["-18%", "18%"]);
   
   return (
     <div ref={ref} className="absolute inset-0 z-0 overflow-hidden">
-      {src?.match(/\.(mp4|webm)$/i) ? (
-        <motion.video 
-          style={{ y }}
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          src={src} 
-          autoPlay muted loop playsInline
-          className="w-full h-[140%] -mt-[20%] object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-700"
-        />
-      ) : (
-        <motion.img 
-          style={{ y }}
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          src={src} 
-          alt={alt}
-          className="w-full h-[140%] -mt-[20%] object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-700"
-        />
-      )}
+      <motion.div 
+        initial={{ opacity: 0, y: 80, scale: 1.15, filter: 'blur(12px)' }}
+        animate={isInView ? { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' } : { opacity: 0, y: 80, scale: 1.15, filter: 'blur(12px)' }}
+        transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+        className="w-full h-full relative"
+      >
+        {src?.match(/\.(mp4|webm)$/i) ? (
+          <motion.video 
+            style={{ y: parallaxY }}
+            src={src} 
+            autoPlay muted loop playsInline
+            className="w-full h-[140%] -mt-[20%] object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-700"
+          />
+        ) : (
+          <motion.img 
+            style={{ y: parallaxY }}
+            src={src} 
+            alt={alt}
+            className="w-full h-[140%] -mt-[20%] object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-700"
+          />
+        )}
+      </motion.div>
     </div>
   );
 }
