@@ -1,5 +1,5 @@
 import { motion, useScroll, useTransform, AnimatePresence, useInView } from 'motion/react';
-import { Mountain, Compass, Wind, ThermometerSnowflake, Users, Map, MoreVertical, ExternalLink, TreePine, Waves, CloudRain, Volume2, VolumeX, Search, ArrowDown, ArrowUp, ArrowRight, Images, X, ChevronLeft, ChevronRight, Maximize2, ZoomIn, ShieldAlert, CheckSquare, Square, Layers, Navigation, Radio, Sparkles, Sliders, CheckCircle2, Circle, Shield, Flame, Calculator, Calendar, DollarSign, CloudSun, Send, Check, BarChart3, Scale, RefreshCw, Info, Clock, AlertTriangle, Star, MessageSquare, PhoneCall, Play, Pause, Headphones, TrendingUp, AlertCircle, Award, ThumbsUp, Plus, SlidersHorizontal, Printer, FileText, Backpack, Crosshair, Target, Download, HelpCircle, HeartPulse, FileCheck, Eye, Camera, Activity as ActivityIcon, Globe, Radar, BookOpen, LifeBuoy, CreditCard, PieChart, Sun, Moon, Sunrise, Sunset, Dumbbell, Mic, Utensils, Maximize, CloudLightning, Leaf, Video, UserCheck, BadgeCheck, FileDown, Share2, Siren, Apple, Languages, Share, Trash2, Edit3, Save, Database, Upload, Settings, Terminal, Battery, BatteryCharging, BatteryWarning, Zap, Thermometer } from 'lucide-react';
+import { Mountain, Compass, Wind, ThermometerSnowflake, Users, Map, MoreVertical, ExternalLink, TreePine, Waves, CloudRain, Volume2, VolumeX, Search, ArrowDown, ArrowUp, ArrowRight, Images, X, ChevronLeft, ChevronRight, Maximize2, ZoomIn, ShieldAlert, CheckSquare, Square, Layers, Navigation, Radio, Sparkles, Sliders, CheckCircle2, Circle, Shield, Flame, Calculator, Calendar, DollarSign, CloudSun, Send, Check, BarChart3, Scale, RefreshCw, Info, Clock, AlertTriangle, Star, MessageSquare, PhoneCall, Play, Pause, Headphones, TrendingUp, AlertCircle, Award, ThumbsUp, Plus, SlidersHorizontal, Printer, FileText, Backpack, Crosshair, Target, Download, HelpCircle, HeartPulse, FileCheck, Eye, Camera, Activity as ActivityIcon, Globe, Radar, BookOpen, LifeBuoy, CreditCard, PieChart, Sun, Moon, Sunrise, Sunset, Dumbbell, Mic, Utensils, Maximize, CloudLightning, Leaf, Video, UserCheck, BadgeCheck, FileDown, Share2, Siren, Apple, Languages, Share, Trash2, Edit3, Save, Database, Upload, Settings, Terminal, Battery, BatteryCharging, BatteryWarning, Zap, Thermometer, KeyRound, History, HardDrive, Lock, ClipboardList, ShieldCheck } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
 import { destinations as defaultDestinations } from './destinations';
 import { AdminLogin } from './components/AdminLogin';
@@ -117,7 +117,39 @@ export default function App() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [heroMousePos, setHeroMousePos] = useState({ x: 50, y: 50 });
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.location.pathname.toLowerCase().includes('admin');
+    }
+    return false;
+  });
+
+  // Sync URL location with Admin Panel state & handle back/forward navigation
+  useEffect(() => {
+    const handleLocationChange = () => {
+      if (typeof window !== 'undefined') {
+        const isAdminPath = window.location.pathname.toLowerCase().includes('admin');
+        setIsAdminOpen(isAdminPath);
+      }
+    };
+
+    window.addEventListener('popstate', handleLocationChange);
+    return () => window.removeEventListener('popstate', handleLocationChange);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (isAdminOpen) {
+        if (!window.location.pathname.toLowerCase().includes('admin')) {
+          window.history.pushState({}, '', '/admin');
+        }
+      } else {
+        if (window.location.pathname.toLowerCase().includes('admin')) {
+          window.history.pushState({}, '', '/');
+        }
+      }
+    }
+  }, [isAdminOpen]);
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     try {
       const saved = localStorage.getItem('app_theme') as 'dark' | 'light';
@@ -6535,8 +6567,119 @@ function AdminControlPanelModal({
   destinations: any[];
   setDestinations: React.Dispatch<React.SetStateAction<any[]>>;
 }) {
-  const [activeTab, setActiveTab] = useState<'manifest' | 'broadcast' | 'permits' | 'rescue' | 'trail' | 'telemetry' | 'themeData'>('manifest');
+  const [activeTab, setActiveTab] = useState<
+    | 'manifest'
+    | 'broadcast'
+    | 'permits'
+    | 'rescue'
+    | 'trail'
+    | 'telemetry'
+    | 'themeData'
+    | 'accountAccess'
+    | 'securitySettings'
+    | 'auditLogs'
+    | 'backupRecovery'
+  >('manifest');
+
+  // TAB 9: Security Settings & Custom Role Session Timeouts
+  const [roleSessionTimeouts, setRoleSessionTimeouts] = useState<Record<RoleTier, number>>(() => {
+    const saved = localStorage.getItem('admin_role_timeouts');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return {
+      'Super Admin': 15,
+      'Flight Dispatcher': 30,
+      'Trail Marshal': 60,
+      'Ops Inspector': 120,
+      'Read-Only': 240
+    };
+  });
+
+  const [ipWhitelist, setIpWhitelist] = useState<string[]>(() => {
+    const saved = localStorage.getItem('admin_ip_whitelist');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return ['192.168.1.0/24', '10.0.4.15', '172.16.0.100'];
+  });
+  const [newIpInput, setNewIpInput] = useState<string>('');
+  const [mfaPolicyEnforced, setMfaPolicyEnforced] = useState<boolean>(() => {
+    return localStorage.getItem('admin_mfa_enforced') !== 'false';
+  });
+  const [idleAutoLock, setIdleAutoLock] = useState<boolean>(true);
+
+  // TAB 10: Activity Audit & Command Logs
+  type AuditStatus = 'SUCCESS' | 'WARN' | 'INFO';
+  interface AuditLogEntry {
+    id: string;
+    timestamp: string;
+    operator: string;
+    role: RoleTier;
+    action: string;
+    ip: string;
+    status: AuditStatus;
+  }
+
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => {
+    const saved = localStorage.getItem('admin_audit_logs');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return [
+      { id: 'LOG-8801', timestamp: new Date(Date.now() - 1000 * 60 * 12).toISOString().replace('T', ' ').substring(0, 19) + ' UTC', operator: 'apex_commander', role: 'Super Admin', action: 'INITIATED COMMAND CENTER SESSION', ip: '192.168.1.102', status: 'INFO' },
+      { id: 'LOG-8802', timestamp: new Date(Date.now() - 1000 * 60 * 35).toISOString().replace('T', ' ').substring(0, 19) + ' UTC', operator: 'sherpa_dispatch', role: 'Flight Dispatcher', action: 'DISPATCHED RESCUE DRONE X8 TO GORAKSHEP', ip: '10.0.4.15', status: 'SUCCESS' },
+      { id: 'LOG-8803', timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString().replace('T', ' ').substring(0, 19) + ' UTC', operator: 'patagonia_marshal', role: 'Trail Marshal', action: 'RAISED EVEREST AVALANCHE RISK TO LEVEL 4', ip: '172.16.0.100', status: 'WARN' },
+      { id: 'LOG-8804', timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString().replace('T', ' ').substring(0, 19) + ' UTC', operator: 'apex_commander', role: 'Super Admin', action: 'APPROVED EXPEDITION PERMIT PERMIT-2026-089', ip: '192.168.1.102', status: 'SUCCESS' }
+    ];
+  });
+  const [logSearch, setLogSearch] = useState<string>('');
+  const [logFilterStatus, setLogFilterStatus] = useState<'ALL' | 'SUCCESS' | 'WARN' | 'INFO'>('ALL');
+
+  const addAuditLog = (action: string, status: AuditStatus = 'SUCCESS') => {
+    const newEntry: AuditLogEntry = {
+      id: `LOG-${Math.floor(8800 + Math.random() * 1000)}`,
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC',
+      operator: 'apex_commander',
+      role: 'Super Admin',
+      action,
+      ip: '192.168.1.102',
+      status
+    };
+    setAuditLogs(prev => {
+      const updated = [newEntry, ...prev].slice(0, 100);
+      localStorage.setItem('admin_audit_logs', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // TAB 11: Automated Backup & Recovery
+  const [autoBackupInterval, setAutoBackupInterval] = useState<'HOURLY' | 'DAILY' | 'WEEKLY' | 'OFF'>(() => {
+    return (localStorage.getItem('admin_autobackup_interval') as any) || 'DAILY';
+  });
+
+  const [backupSnapshots, setBackupSnapshots] = useState<Array<{
+    id: string;
+    timestamp: string;
+    size: string;
+    version: string;
+    type: 'AUTO' | 'MANUAL';
+    itemCount: number;
+    data: any;
+  }>>(() => {
+    const saved = localStorage.getItem('admin_backup_snapshots');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return [
+      { id: 'SNAP-2026-0730-01', timestamp: '2026-07-30 08:00:00 UTC', size: '14.2 KB', version: 'v5.0 PRO', type: 'AUTO', itemCount: 4, data: null },
+      { id: 'SNAP-2026-0729-22', timestamp: '2026-07-29 22:00:00 UTC', size: '13.8 KB', version: 'v5.0 PRO', type: 'MANUAL', itemCount: 4, data: null }
+    ];
+  });
   
+  // Split Pane Live Verification View Mode
+  const [splitPreview, setSplitPreview] = useState<boolean>(false);
+
   // Tab 1: Manifest States
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
@@ -6598,6 +6741,98 @@ function AdminControlPanelModal({
 
   // Tab 7: System Accent Theme
   const [accentColor, setAccentColor] = useState<string>(() => localStorage.getItem('admin_accent_color') || '#f27d26');
+
+  // Tab 8: Account Access & Secondary Admin Users
+  type RoleTier = 'Super Admin' | 'Flight Dispatcher' | 'Trail Marshal' | 'Ops Inspector' | 'Read-Only';
+  const [accountUsers, setAccountUsers] = useState<Array<{
+    id: string;
+    username: string;
+    email: string;
+    role: RoleTier;
+    status: 'ACTIVE' | 'SUSPENDED';
+    lastLogin: string;
+  }>>(() => {
+    const saved = localStorage.getItem('admin_account_users');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return [
+      { id: 'ADM-101', username: 'apex_commander', email: 'commander@apex-expeditions.org', role: 'Super Admin', status: 'ACTIVE', lastLogin: 'Today, 08:14 UTC' },
+      { id: 'ADM-102', username: 'sherpa_dispatch', email: 'rescue@himalaya-air.np', role: 'Flight Dispatcher', status: 'ACTIVE', lastLogin: 'Yesterday, 19:40 UTC' },
+      { id: 'ADM-103', username: 'patagonia_marshal', email: 'ranger@patagonia-park.cl', role: 'Trail Marshal', status: 'ACTIVE', lastLogin: '3 days ago' },
+      { id: 'ADM-104', username: 'ops_inspector', email: 'audit@frontiers.gov', role: 'Ops Inspector', status: 'ACTIVE', lastLogin: '1 week ago' }
+    ];
+  });
+
+  const [showAddUserModal, setShowAddUserModal] = useState<boolean>(false);
+  const [newUserForm, setNewUserForm] = useState<{
+    username: string;
+    email: string;
+    role: RoleTier;
+  }>({
+    username: '',
+    email: '',
+    role: 'Flight Dispatcher'
+  });
+
+  // Save Account Users to LocalStorage helper
+  const saveAccountUsers = (users: typeof accountUsers) => {
+    setAccountUsers(users);
+    localStorage.setItem('admin_account_users', JSON.stringify(users));
+  };
+
+  const handleAddUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUserForm.username.trim() || !newUserForm.email.trim()) return;
+
+    const newUser = {
+      id: `ADM-${Math.floor(100 + Math.random() * 900)}`,
+      username: newUserForm.username.trim(),
+      email: newUserForm.email.trim(),
+      role: newUserForm.role,
+      status: 'ACTIVE' as const,
+      lastLogin: 'Never (Pending First Login)'
+    };
+
+    const updated = [newUser, ...accountUsers];
+    saveAccountUsers(updated);
+    showNotification(`✓ NEW ADMIN CREDENTIAL [${newUser.username}] ADDED WITH TIER: ${newUser.role}`);
+    setNewUserForm({ username: '', email: '', role: 'Flight Dispatcher' });
+    setShowAddUserModal(false);
+  };
+
+  const handleDeleteUser = (id: string, username: string) => {
+    if (accountUsers.length <= 1) {
+      alert('Cannot delete the primary root admin account.');
+      return;
+    }
+    const updated = accountUsers.filter(u => u.id !== id);
+    saveAccountUsers(updated);
+    showNotification(`✓ REMOVED ADMIN CREDENTIAL: ${username}`);
+  };
+
+  const handleToggleUserStatus = (id: string) => {
+    const updated = accountUsers.map(u => {
+      if (u.id === id) {
+        const nextStatus = u.status === 'ACTIVE' ? 'SUSPENDED' as const : 'ACTIVE' as const;
+        showNotification(`✓ USER ${u.username} STATUS SET TO ${nextStatus}`);
+        return { ...u, status: nextStatus };
+      }
+      return u;
+    });
+    saveAccountUsers(updated);
+  };
+
+  const handleUpdateUserRole = (id: string, role: RoleTier) => {
+    const updated = accountUsers.map(u => {
+      if (u.id === id) {
+        showNotification(`✓ ROLE FOR ${u.username} UPDATED TO ${role}`);
+        return { ...u, role };
+      }
+      return u;
+    });
+    saveAccountUsers(updated);
+  };
 
   // General Notification toast
   const [notice, setNotice] = useState<string | null>(null);
@@ -6732,6 +6967,92 @@ function AdminControlPanelModal({
     showNotification('✓ MANIFEST JSON DOWNLOADED');
   };
 
+  // Security Policy & Timeouts Handlers
+  const handleSaveTimeouts = () => {
+    localStorage.setItem('admin_role_timeouts', JSON.stringify(roleSessionTimeouts));
+    localStorage.setItem('admin_mfa_enforced', String(mfaPolicyEnforced));
+    addAuditLog('UPDATED ROLE SESSION TIMEOUTS & SECURITY POLICIES', 'SUCCESS');
+    showNotification('✓ ROLE SESSION TIMEOUT DURATIONS & SECURITY POLICIES SAVED');
+  };
+
+  const handleAddIpWhitelist = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newIpInput.trim()) return;
+    const cleanIp = newIpInput.trim();
+    if (ipWhitelist.includes(cleanIp)) return;
+    const updated = [...ipWhitelist, cleanIp];
+    setIpWhitelist(updated);
+    localStorage.setItem('admin_ip_whitelist', JSON.stringify(updated));
+    addAuditLog(`ADDED IP SUBNET [${cleanIp}] TO ADMIN WHITELIST`, 'SUCCESS');
+    showNotification(`✓ ADDED ${cleanIp} TO AUTHORIZED IP WHITELIST`);
+    setNewIpInput('');
+  };
+
+  const handleRemoveIpWhitelist = (ip: string) => {
+    const updated = ipWhitelist.filter(i => i !== ip);
+    setIpWhitelist(updated);
+    localStorage.setItem('admin_ip_whitelist', JSON.stringify(updated));
+    addAuditLog(`REMOVED IP SUBNET [${ip}] FROM ADMIN WHITELIST`, 'WARN');
+    showNotification(`✓ REMOVED ${ip} FROM AUTHORIZED IP WHITELIST`);
+  };
+
+  // Export Audit Logs CSV Handler
+  const handleExportAuditLogsCSV = () => {
+    let csv = 'Log ID,Timestamp,Operator,Role,Action,IP Address,Status\n';
+    auditLogs.forEach(l => {
+      csv += `"${l.id}","${l.timestamp}","${l.operator}","${l.role}","${l.action.replace(/"/g, '""')}","${l.ip}","${l.status}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `admin-audit-logs-${Date.now()}.csv`;
+    a.click();
+    addAuditLog('EXPORTED SECURITY AUDIT COMMAND LOGS (.CSV)', 'INFO');
+    showNotification('✓ SECURITY AUDIT LOGS CSV EXPORTED');
+  };
+
+  // Snapshot Backup Handlers
+  const handleCreateSnapshot = () => {
+    const snapshotData = {
+      destinations,
+      accountUsers,
+      permitsList,
+      airRescueUnits,
+      trailStatuses,
+      avalancheRiskLevels,
+      roleSessionTimeouts,
+      ipWhitelist,
+      mfaPolicyEnforced
+    };
+    const newSnap = {
+      id: `SNAP-${Date.now()}`,
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC',
+      size: `${(JSON.stringify(snapshotData).length / 1024).toFixed(1)} KB`,
+      version: 'v5.0 PRO',
+      type: 'MANUAL' as const,
+      itemCount: destinations.length,
+      data: snapshotData
+    };
+    const updated = [newSnap, ...backupSnapshots];
+    setBackupSnapshots(updated);
+    localStorage.setItem('admin_backup_snapshots', JSON.stringify(updated));
+    addAuditLog(`CREATED SYSTEM STATE SNAPSHOT [${newSnap.id}]`, 'SUCCESS');
+    showNotification('✓ MANUAL SYSTEM SNAPSHOT CREATED SUCCESSFULLY');
+  };
+
+  const handleRestoreSnapshot = (snapId: string) => {
+    const target = backupSnapshots.find(s => s.id === snapId);
+    if (target && target.data) {
+      if (target.data.destinations) setDestinations(target.data.destinations);
+      if (target.data.accountUsers) saveAccountUsers(target.data.accountUsers);
+      if (target.data.permitsList) setPermitsList(target.data.permitsList);
+      if (target.data.airRescueUnits) setAirRescueUnits(target.data.airRescueUnits);
+    }
+    addAuditLog(`RESTORED SYSTEM SNAPSHOT [${snapId}]`, 'WARN');
+    showNotification(`✓ SYSTEM STATE RESTORED TO SNAPSHOT: ${snapId}`);
+  };
+
   // Import JSON Manifest
   const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileReader = new FileReader();
@@ -6772,17 +7093,19 @@ function AdminControlPanelModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 15 }}
         transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-        className="bg-bg-panel border border-accent/40 w-full max-w-5xl my-auto text-text-main font-mono relative shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+        className={`bg-bg-panel border border-accent/40 w-full my-auto text-text-main font-mono relative shadow-2xl overflow-hidden flex flex-col h-[92vh] transition-all ${
+          splitPreview ? 'max-w-[98vw]' : 'max-w-5xl'
+        }`}
       >
         
         {/* Modal Header */}
-        <div className="p-5 md:p-6 border-b border-text-main/10 flex items-center justify-between bg-bg-base shrink-0">
+        <div className="p-4 md:p-6 border-b border-text-main/10 flex items-center justify-between bg-bg-base shrink-0">
           <div className="flex items-center gap-3">
-            <Settings className="w-6 h-6 text-accent animate-spin-slow" />
+            <Settings className="w-6 h-6 text-accent animate-spin-slow shrink-0" />
             <div>
-              <h3 className="text-lg md:text-xl font-black uppercase tracking-tight text-text-main flex items-center gap-2">
+              <h3 className="text-base md:text-xl font-black uppercase tracking-tight text-text-main flex items-center gap-2">
                 EXPEDITION SYSTEM ADMIN COMMAND CENTER
-                <span className="px-2 py-0.5 bg-accent/20 border border-accent/30 text-accent text-[9px] font-bold rounded">
+                <span className="hidden sm:inline px-2 py-0.5 bg-accent/20 border border-accent/30 text-accent text-[9px] font-bold rounded">
                   v5.0 PRO
                 </span>
               </h3>
@@ -6790,14 +7113,28 @@ function AdminControlPanelModal({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            {/* Split Preview Mode Toggle */}
+            <button
+              onClick={() => setSplitPreview(!splitPreview)}
+              className={`px-3 py-1.5 border font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors ${
+                splitPreview 
+                  ? 'bg-accent text-bg-base border-accent shadow-md' 
+                  : 'border-text-main/20 bg-bg-base hover:border-accent text-text-main hover:text-accent'
+              }`}
+              title="Toggle Side-by-Side Application Live Preview"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{splitPreview ? 'Exit Split View' : 'Split Preview Pane'}</span>
+            </button>
+
             <button
               onClick={handleAdminLogout}
               className="px-3 py-1.5 border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors"
               title="Lock Panel"
             >
               <ShieldAlert className="w-3.5 h-3.5" />
-              <span>Lock Panel</span>
+              <span className="hidden sm:inline">Lock Panel</span>
             </button>
 
             <button
@@ -6809,79 +7146,6 @@ function AdminControlPanelModal({
           </div>
         </div>
 
-        {/* Navigation Tabs Bar */}
-        <div className="flex border-b border-text-main/10 bg-bg-base shrink-0 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('manifest')}
-            className={`px-4 py-3 text-xs font-bold uppercase transition-colors border-r border-text-main/10 flex items-center gap-1.5 shrink-0 cursor-pointer ${
-              activeTab === 'manifest' ? 'bg-accent text-bg-base' : 'text-text-main/70 hover:text-text-main'
-            }`}
-          >
-            <Database className="w-3.5 h-3.5" />
-            <span>1. Manifests ({destinations.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('broadcast')}
-            className={`px-4 py-3 text-xs font-bold uppercase transition-colors border-r border-text-main/10 flex items-center gap-1.5 shrink-0 cursor-pointer ${
-              activeTab === 'broadcast' ? 'bg-accent text-bg-base' : 'text-text-main/70 hover:text-text-main'
-            }`}
-          >
-            <Siren className="w-3.5 h-3.5" />
-            <span>2. Live Alerts</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('permits')}
-            className={`px-4 py-3 text-xs font-bold uppercase transition-colors border-r border-text-main/10 flex items-center gap-1.5 shrink-0 cursor-pointer ${
-              activeTab === 'permits' ? 'bg-accent text-bg-base' : 'text-text-main/70 hover:text-text-main'
-            }`}
-          >
-            <FileCheck className="w-3.5 h-3.5" />
-            <span>3. Permits ({permitsList.filter(p => p.status === 'PENDING').length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('rescue')}
-            className={`px-4 py-3 text-xs font-bold uppercase transition-colors border-r border-text-main/10 flex items-center gap-1.5 shrink-0 cursor-pointer ${
-              activeTab === 'rescue' ? 'bg-accent text-bg-base' : 'text-text-main/70 hover:text-text-main'
-            }`}
-          >
-            <Crosshair className="w-3.5 h-3.5" />
-            <span>4. Air Rescue ({airRescueUnits.filter(u => u.status === 'AIRBORNE' || u.status === 'DISPATCHED').length} Active)</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('trail')}
-            className={`px-4 py-3 text-xs font-bold uppercase transition-colors border-r border-text-main/10 flex items-center gap-1.5 shrink-0 cursor-pointer ${
-              activeTab === 'trail' ? 'bg-accent text-bg-base' : 'text-text-main/70 hover:text-text-main'
-            }`}
-          >
-            <ShieldAlert className="w-3.5 h-3.5" />
-            <span>5. Trail & Avalanche</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('telemetry')}
-            className={`px-4 py-3 text-xs font-bold uppercase transition-colors border-r border-text-main/10 flex items-center gap-1.5 shrink-0 cursor-pointer ${
-              activeTab === 'telemetry' ? 'bg-accent text-bg-base' : 'text-text-main/70 hover:text-text-main'
-            }`}
-          >
-            <Terminal className="w-3.5 h-3.5" />
-            <span>6. Telemetry</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('themeData')}
-            className={`px-4 py-3 text-xs font-bold uppercase transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer ${
-              activeTab === 'themeData' ? 'bg-accent text-bg-base' : 'text-text-main/70 hover:text-text-main'
-            }`}
-          >
-            <Sliders className="w-3.5 h-3.5" />
-            <span>7. Theme & Backup</span>
-          </button>
-        </div>
-
         {/* Notifications Toast */}
         {notice && (
           <div className="bg-emerald-500/20 border-b border-emerald-500/40 p-3 text-emerald-400 text-xs font-bold text-center shrink-0">
@@ -6889,10 +7153,185 @@ function AdminControlPanelModal({
           </div>
         )}
 
-        {/* Main Body Content */}
-        <div className="p-6 overflow-y-auto space-y-6 grow">
+        {/* Modal Main Content Container with Persistent Vertical Sidebar */}
+        <div className="grow overflow-hidden flex flex-col md:flex-row">
           
-          {/* TAB 1: MANIFEST MANAGER */}
+          {/* Vertical Sidebar Navigation */}
+          <div className="w-full md:w-64 bg-bg-base border-b md:border-b-0 md:border-r border-text-main/10 flex flex-row md:flex-col shrink-0 overflow-x-auto md:overflow-y-auto p-2 space-x-1 md:space-x-0 md:space-y-1 font-mono text-xs select-none">
+            
+            <div className="hidden md:block px-3 py-2 text-[10px] font-bold text-text-main/50 uppercase tracking-wider border-b border-text-main/10 mb-1">
+              Admin Subsystems
+            </div>
+
+            <button
+              onClick={() => setActiveTab('manifest')}
+              className={`px-3 py-2.5 text-xs font-bold uppercase transition-all flex items-center justify-between cursor-pointer rounded shrink-0 md:shrink ${
+                activeTab === 'manifest' ? 'bg-accent text-bg-base font-black shadow-md' : 'text-text-main/70 hover:bg-text-main/5 hover:text-text-main'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Database className="w-4 h-4 shrink-0" />
+                <span>1. Manifests</span>
+              </div>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${activeTab === 'manifest' ? 'bg-bg-base/20 text-bg-base' : 'bg-bg-panel text-text-main/60'}`}>
+                {destinations.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('broadcast')}
+              className={`px-3 py-2.5 text-xs font-bold uppercase transition-all flex items-center justify-between cursor-pointer rounded shrink-0 md:shrink ${
+                activeTab === 'broadcast' ? 'bg-accent text-bg-base font-black shadow-md' : 'text-text-main/70 hover:bg-text-main/5 hover:text-text-main'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Siren className="w-4 h-4 shrink-0" />
+                <span>2. Live Alerts</span>
+              </div>
+              {broadcastActive && (
+                <span className={`text-[9px] px-1.5 py-0.2 rounded font-black ${activeTab === 'broadcast' ? 'bg-red-600 text-white' : 'bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse'}`}>
+                  LIVE
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('permits')}
+              className={`px-3 py-2.5 text-xs font-bold uppercase transition-all flex items-center justify-between cursor-pointer rounded shrink-0 md:shrink ${
+                activeTab === 'permits' ? 'bg-accent text-bg-base font-black shadow-md' : 'text-text-main/70 hover:bg-text-main/5 hover:text-text-main'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <FileCheck className="w-4 h-4 shrink-0" />
+                <span>3. Permits</span>
+              </div>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${activeTab === 'permits' ? 'bg-bg-base/20 text-bg-base' : 'bg-bg-panel text-text-main/60'}`}>
+                {permitsList.filter(p => p.status === 'PENDING').length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('rescue')}
+              className={`px-3 py-2.5 text-xs font-bold uppercase transition-all flex items-center justify-between cursor-pointer rounded shrink-0 md:shrink ${
+                activeTab === 'rescue' ? 'bg-accent text-bg-base font-black shadow-md' : 'text-text-main/70 hover:bg-text-main/5 hover:text-text-main'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Crosshair className="w-4 h-4 shrink-0" />
+                <span>4. Air Rescue SAR</span>
+              </div>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${activeTab === 'rescue' ? 'bg-bg-base/20 text-bg-base' : 'bg-bg-panel text-text-main/60'}`}>
+                {airRescueUnits.filter(u => u.status === 'AIRBORNE' || u.status === 'DISPATCHED').length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('trail')}
+              className={`px-3 py-2.5 text-xs font-bold uppercase transition-all flex items-center justify-between cursor-pointer rounded shrink-0 md:shrink ${
+                activeTab === 'trail' ? 'bg-accent text-bg-base font-black shadow-md' : 'text-text-main/70 hover:bg-text-main/5 hover:text-text-main'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 shrink-0" />
+                <span>5. Trail Advisories</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('telemetry')}
+              className={`px-3 py-2.5 text-xs font-bold uppercase transition-all flex items-center justify-between cursor-pointer rounded shrink-0 md:shrink ${
+                activeTab === 'telemetry' ? 'bg-accent text-bg-base font-black shadow-md' : 'text-text-main/70 hover:bg-text-main/5 hover:text-text-main'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Terminal className="w-4 h-4 shrink-0" />
+                <span>6. Telemetry</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('themeData')}
+              className={`px-3 py-2.5 text-xs font-bold uppercase transition-all flex items-center justify-between cursor-pointer rounded shrink-0 md:shrink ${
+                activeTab === 'themeData' ? 'bg-accent text-bg-base font-black shadow-md' : 'text-text-main/70 hover:bg-text-main/5 hover:text-text-main'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Sliders className="w-4 h-4 shrink-0" />
+                <span>7. Theme & Branding</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('accountAccess')}
+              className={`px-3 py-2.5 text-xs font-bold uppercase transition-all flex items-center justify-between cursor-pointer rounded shrink-0 md:shrink ${
+                activeTab === 'accountAccess' ? 'bg-accent text-bg-base font-black shadow-md' : 'text-text-main/70 hover:bg-text-main/5 hover:text-text-main'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <UserCheck className="w-4 h-4 shrink-0" />
+                <span>8. Account Access</span>
+              </div>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${activeTab === 'accountAccess' ? 'bg-bg-base/20 text-bg-base' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                {accountUsers.filter(u => u.status === 'ACTIVE').length}
+              </span>
+            </button>
+
+            <div className="hidden md:block px-3 py-2 text-[10px] font-bold text-text-main/50 uppercase tracking-wider border-b border-text-main/10 my-1">
+              Security & Recovery
+            </div>
+
+            <button
+              onClick={() => setActiveTab('securitySettings')}
+              className={`px-3 py-2.5 text-xs font-bold uppercase transition-all flex items-center justify-between cursor-pointer rounded shrink-0 md:shrink ${
+                activeTab === 'securitySettings' ? 'bg-accent text-bg-base font-black shadow-md' : 'text-text-main/70 hover:bg-text-main/5 hover:text-text-main'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 shrink-0" />
+                <span>9. Security Settings</span>
+              </div>
+              <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${activeTab === 'securitySettings' ? 'bg-bg-base/20 text-bg-base' : 'bg-bg-panel text-accent'}`}>
+                Timeouts
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('auditLogs')}
+              className={`px-3 py-2.5 text-xs font-bold uppercase transition-all flex items-center justify-between cursor-pointer rounded shrink-0 md:shrink ${
+                activeTab === 'auditLogs' ? 'bg-accent text-bg-base font-black shadow-md' : 'text-text-main/70 hover:bg-text-main/5 hover:text-text-main'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <History className="w-4 h-4 shrink-0" />
+                <span>10. Audit Logs</span>
+              </div>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${activeTab === 'auditLogs' ? 'bg-bg-base/20 text-bg-base' : 'bg-bg-panel text-text-main/60'}`}>
+                {auditLogs.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('backupRecovery')}
+              className={`px-3 py-2.5 text-xs font-bold uppercase transition-all flex items-center justify-between cursor-pointer rounded shrink-0 md:shrink ${
+                activeTab === 'backupRecovery' ? 'bg-accent text-bg-base font-black shadow-md' : 'text-text-main/70 hover:bg-text-main/5 hover:text-text-main'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <HardDrive className="w-4 h-4 shrink-0" />
+                <span>11. Backup & Recovery</span>
+              </div>
+            </button>
+
+          </div>
+
+          {/* Main Content Body */}
+          <div className="grow overflow-hidden flex flex-col">
+            <div className={`p-6 overflow-y-auto grow ${splitPreview ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : 'space-y-6'}`}>
+            
+            {/* Left Column / Primary Admin Controls */}
+            <div className={`space-y-6 ${splitPreview ? 'pr-1' : ''}`}>
+              
+              {/* TAB 1: MANIFEST MANAGER */}
           {activeTab === 'manifest' && (
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
@@ -7237,7 +7676,155 @@ function AdminControlPanelModal({
             </div>
           )}
 
-          {/* TAB 4: SATELLITE TELEMETRY & THREATS */}
+          {/* TAB 4: AIR RESCUE & HELICOPTER DISPATCHER */}
+          {activeTab === 'rescue' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between border-b border-text-main/10 pb-4">
+                <div>
+                  <h4 className="text-sm font-bold text-accent uppercase flex items-center gap-2">
+                    <Crosshair className="w-5 h-5 text-accent animate-pulse" />
+                    <span>AIR RESCUE & HELICOPTER DISPATCHER</span>
+                  </h4>
+                  <p className="text-[10px] text-text-main/60 uppercase">Real-time SAR unit deployment & flight vector controls</p>
+                </div>
+                <button
+                  onClick={() => {
+                    const newUnit = {
+                      id: `RESCUE-0${airRescueUnits.length + 1}`,
+                      callsign: `RAPTOR HELI H${airRescueUnits.length + 1}`,
+                      type: 'Rapid Response Medical Chopper',
+                      location: 'Base Camp Helipad',
+                      status: 'STANDBY' as const,
+                      pilot: 'Capt. Tenzing Sherpa'
+                    };
+                    setAirRescueUnits([...airRescueUnits, newUnit]);
+                    showNotification(`✓ NEW RESCUE UNIT ${newUnit.id} REGISTERED ON STANDBY`);
+                  }}
+                  className="px-4 py-2 bg-accent text-bg-base text-xs font-bold uppercase flex items-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Deploy New Unit</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                {airRescueUnits.map((unit) => (
+                  <div key={unit.id} className="bg-bg-base border border-text-main/10 p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3">
+                        <span className="font-bold text-sm text-text-main">{unit.callsign}</span>
+                        <span className="text-[10px] px-2 py-0.5 bg-bg-panel border border-accent/30 text-accent font-bold">
+                          {unit.id}
+                        </span>
+                      </div>
+                      <p className="text-xs text-text-main/70">
+                        Type: <strong className="text-text-main">{unit.type}</strong> • Location: {unit.location} • Pilot: {unit.pilot}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {(['STANDBY', 'AIRBORNE', 'DISPATCHED', 'REFUELING'] as const).map((st) => (
+                        <button
+                          key={st}
+                          onClick={() => {
+                            setAirRescueUnits(prev => prev.map(u => u.id === unit.id ? { ...u, status: st } : u));
+                            showNotification(`✓ ${unit.callsign} STATUS SET TO ${st}`);
+                          }}
+                          className={`px-3 py-1.5 text-[10px] font-bold uppercase border cursor-pointer transition-colors ${
+                            unit.status === st 
+                              ? st === 'AIRBORNE' || st === 'DISPATCHED' ? 'bg-red-500 text-white border-red-500' : 'bg-accent text-bg-base border-accent'
+                              : 'border-text-main/20 text-text-main/70 hover:text-text-main'
+                          }`}
+                        >
+                          {st}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: TRAIL STATUS & AVALANCHE HAZARD CONTROLS */}
+          {activeTab === 'trail' && (
+            <div className="space-y-6">
+              <div className="border-b border-text-main/10 pb-4">
+                <h4 className="text-sm font-bold text-accent uppercase flex items-center gap-2">
+                  <ShieldAlert className="w-5 h-5 text-accent" />
+                  <span>EXPEDITION TRAIL STATUS & AVALANCHE HAZARDS</span>
+                </h4>
+                <p className="text-[10px] text-text-main/60 uppercase">Set live trail access advisories and danger scales per region</p>
+              </div>
+
+              <div className="space-y-4">
+                {destinations.map((dest) => {
+                  const status = trailStatuses[dest.id] || 'OPEN';
+                  const risk = avalancheRiskLevels[dest.id] || 1;
+
+                  return (
+                    <div key={dest.id} className="bg-bg-base border border-text-main/10 p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                      <div className="space-y-1 max-w-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-base text-text-main">{dest.name}</span>
+                          <span className="text-[10px] text-text-main/60 font-mono">({dest.location})</span>
+                        </div>
+                        <p className="text-xs text-text-main/70">{dest.tagline}</p>
+                      </div>
+
+                      {/* Trail Open/Caution/Closed status */}
+                      <div className="flex flex-col gap-2">
+                        <span className="text-[10px] font-bold text-text-main/50 uppercase">TRAIL ACCESS ADVISORY:</span>
+                        <div className="flex gap-2">
+                          {(['OPEN', 'CAUTION', 'CLOSED'] as const).map((st) => (
+                            <button
+                              key={st}
+                              onClick={() => {
+                                setTrailStatuses(prev => ({ ...prev, [dest.id]: st }));
+                                showNotification(`✓ TRAIL STATUS FOR ${dest.name} SET TO ${st}`);
+                              }}
+                              className={`px-3 py-1.5 text-xs font-bold uppercase border cursor-pointer transition-colors ${
+                                status === st 
+                                  ? st === 'OPEN' ? 'bg-emerald-500 text-bg-base border-emerald-500' : st === 'CAUTION' ? 'bg-amber-500 text-bg-base border-amber-500' : 'bg-red-500 text-white border-red-500'
+                                  : 'border-text-main/20 text-text-main/60'
+                              }`}
+                            >
+                              {st}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Avalanche Risk Scale 1-5 */}
+                      <div className="flex flex-col gap-2">
+                        <span className="text-[10px] font-bold text-text-main/50 uppercase">AVALANCHE RISK (LEVEL {risk}/5):</span>
+                        <div className="flex gap-1.5">
+                          {[1, 2, 3, 4, 5].map((level) => (
+                            <button
+                              key={level}
+                              onClick={() => {
+                                setAvalancheRiskLevels(prev => ({ ...prev, [dest.id]: level }));
+                                showNotification(`✓ AVALANCHE RISK FOR ${dest.name} SET TO LEVEL ${level}`);
+                              }}
+                              className={`w-8 h-8 text-xs font-bold border cursor-pointer flex items-center justify-center transition-colors ${
+                                risk === level 
+                                  ? level >= 4 ? 'bg-red-500 text-white border-red-500' : level >= 3 ? 'bg-amber-500 text-bg-base border-amber-500' : 'bg-accent text-bg-base border-accent'
+                                  : 'border-text-main/20 text-text-main/60 hover:border-text-main'
+                              }`}
+                            >
+                              {level}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 6: SATELLITE TELEMETRY & THREATS */}
           {activeTab === 'telemetry' && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -7328,10 +7915,671 @@ function AdminControlPanelModal({
             </div>
           )}
 
+          {/* TAB 8: ACCOUNT ACCESS & SECONDARY ADMIN USER MANAGEMENT */}
+          {activeTab === 'accountAccess' && (
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-text-main/10 pb-4">
+                    <div>
+                      <h4 className="text-sm font-bold text-accent uppercase flex items-center gap-2">
+                        <UserCheck className="w-5 h-5 text-accent" />
+                        <span>AUTHORIZED ADMIN ACCOUNTS & TIERED ACCESS CONTROL</span>
+                      </h4>
+                      <p className="text-[10px] text-text-main/60 uppercase">Manage secondary admin credentials, permission tiers, and active sessions</p>
+                    </div>
+
+                    <button
+                      onClick={() => setShowAddUserModal(true)}
+                      className="px-4 py-2 bg-accent text-bg-base text-xs font-bold uppercase flex items-center gap-2 cursor-pointer shadow-md hover:bg-accent/90 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>+ Add Secondary Admin</span>
+                    </button>
+                  </div>
+
+                  {/* Admin Account Stats Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-bg-base border border-text-main/10 p-4">
+                      <span className="text-[10px] text-text-main/50 uppercase block font-bold">Total Accounts</span>
+                      <div className="text-2xl font-bold text-text-main mt-1">{accountUsers.length} Users</div>
+                    </div>
+                    <div className="bg-bg-base border border-text-main/10 p-4">
+                      <span className="text-[10px] text-text-main/50 uppercase block font-bold">Active Credentials</span>
+                      <div className="text-2xl font-bold text-emerald-500 mt-1">{accountUsers.filter(u => u.status === 'ACTIVE').length} Active</div>
+                    </div>
+                    <div className="bg-bg-base border border-text-main/10 p-4">
+                      <span className="text-[10px] text-text-main/50 uppercase block font-bold">Super Admins</span>
+                      <div className="text-2xl font-bold text-accent mt-1">{accountUsers.filter(u => u.role === 'Super Admin').length} Accounts</div>
+                    </div>
+                    <div className="bg-bg-base border border-text-main/10 p-4">
+                      <span className="text-[10px] text-text-main/50 uppercase block font-bold">Security Compliance</span>
+                      <div className="text-2xl font-bold text-text-main mt-1">100% MFA Sync</div>
+                    </div>
+                  </div>
+
+                  {/* User Credentials Table / Cards */}
+                  <div className="space-y-3">
+                    {accountUsers.map((user) => (
+                      <div key={user.id} className="bg-bg-base border border-text-main/10 p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <span className="font-bold text-sm text-text-main">{user.username}</span>
+                            <span className="text-[10px] px-2 py-0.5 bg-bg-panel border border-accent/30 text-accent font-bold">
+                              {user.id}
+                            </span>
+                            <span className={`text-[10px] px-2 py-0.5 font-bold uppercase rounded border ${
+                              user.status === 'ACTIVE' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'
+                            }`}>
+                              {user.status}
+                            </span>
+                          </div>
+                          <p className="text-xs text-text-main/70">
+                            Email: <strong className="text-text-main">{user.email}</strong> • Last Activity: {user.lastLogin}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {/* Role Tier Selector */}
+                          <select
+                            value={user.role}
+                            onChange={(e) => handleUpdateUserRole(user.id, e.target.value as RoleTier)}
+                            className="bg-bg-panel border border-text-main/20 text-xs text-text-main font-bold py-1.5 px-3 outline-none focus:border-accent cursor-pointer"
+                          >
+                            <option value="Super Admin">Tier 1: Super Admin</option>
+                            <option value="Flight Dispatcher">Tier 2: Flight Dispatcher</option>
+                            <option value="Trail Marshal">Tier 3: Trail Marshal</option>
+                            <option value="Ops Inspector">Tier 4: Ops Inspector</option>
+                            <option value="Read-Only">Tier 5: Read-Only</option>
+                          </select>
+
+                          {/* Toggle Status Button */}
+                          <button
+                            onClick={() => handleToggleUserStatus(user.id)}
+                            className={`px-3 py-1.5 text-[10px] font-bold uppercase border cursor-pointer transition-colors ${
+                              user.status === 'ACTIVE'
+                                ? 'border-amber-500/40 text-amber-400 hover:bg-amber-500/10'
+                                : 'border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
+                            }`}
+                          >
+                            {user.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
+                          </button>
+
+                          {/* Delete Account Button */}
+                          <button
+                            onClick={() => handleDeleteUser(user.id, user.username)}
+                            className="p-1.5 text-text-main/50 hover:text-red-400 transition-colors cursor-pointer border border-transparent hover:border-red-500/30"
+                            title="Delete Credential"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Add User Modal Overlay */}
+                  {showAddUserModal && (
+                    <div className="fixed inset-0 z-[210] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+                      <div className="bg-bg-panel border border-accent/50 w-full max-w-md p-6 space-y-5 text-text-main font-mono relative shadow-2xl">
+                        <div className="flex items-center justify-between border-b border-text-main/10 pb-3">
+                          <h4 className="font-bold text-sm text-accent uppercase flex items-center gap-2">
+                            <UserCheck className="w-4 h-4 text-accent" />
+                            <span>Register Secondary Admin Credential</span>
+                          </h4>
+                          <button onClick={() => setShowAddUserModal(false)} className="text-text-main/50 hover:text-accent cursor-pointer">
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        <form onSubmit={handleAddUser} className="space-y-4">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-text-main/70 uppercase">Username / Call-sign</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="e.g. sherpa_commander"
+                              value={newUserForm.username}
+                              onChange={(e) => setNewUserForm({ ...newUserForm, username: e.target.value })}
+                              className="w-full p-2.5 bg-bg-base border border-text-main/20 text-xs text-text-main outline-none focus:border-accent"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-text-main/70 uppercase">Official Contact Email</label>
+                            <input
+                              type="email"
+                              required
+                              placeholder="e.g. officer@frontiers.org"
+                              value={newUserForm.email}
+                              onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
+                              className="w-full p-2.5 bg-bg-base border border-text-main/20 text-xs text-text-main outline-none focus:border-accent"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-text-main/70 uppercase">Permission Access Tier</label>
+                            <select
+                              value={newUserForm.role}
+                              onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value as RoleTier })}
+                              className="w-full p-2.5 bg-bg-base border border-text-main/20 text-xs text-text-main outline-none focus:border-accent cursor-pointer font-bold"
+                            >
+                              <option value="Super Admin">Tier 1: Super Admin (Full Control)</option>
+                              <option value="Flight Dispatcher">Tier 2: Flight Dispatcher (Rescue Unit Ops)</option>
+                              <option value="Trail Marshal">Tier 3: Trail Marshal (Hazard & Access Ops)</option>
+                              <option value="Ops Inspector">Tier 4: Ops Inspector (Audit & Permits)</option>
+                              <option value="Read-Only">Tier 5: Read-Only (Observer Access)</option>
+                            </select>
+                          </div>
+
+                          <div className="flex justify-end gap-3 pt-3 border-t border-text-main/10">
+                            <button
+                              type="button"
+                              onClick={() => setShowAddUserModal(false)}
+                              className="px-4 py-2 border border-text-main/20 text-xs font-bold uppercase hover:bg-text-main/10 transition-colors cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              className="px-5 py-2 bg-accent text-bg-base text-xs font-bold uppercase shadow-md hover:bg-accent/90 transition-colors cursor-pointer"
+                            >
+                              Save Credential
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 9: SECURITY SETTINGS & ROLE SESSION TIMEOUTS */}
+              {activeTab === 'securitySettings' && (
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-text-main/10 pb-4">
+                    <div>
+                      <h4 className="text-sm font-bold text-accent uppercase flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-accent" />
+                        <span>SECURITY POLICY & CUSTOM ROLE SESSION TIMEOUTS</span>
+                      </h4>
+                      <p className="text-[10px] text-text-main/60 uppercase">Configure session inactivity limits per admin tier, IP subnets, and MFA enforcement</p>
+                    </div>
+
+                    <button
+                      onClick={handleSaveTimeouts}
+                      className="px-4 py-2 bg-accent text-bg-base text-xs font-bold uppercase flex items-center gap-2 cursor-pointer shadow-md hover:bg-accent/90 transition-colors"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>Save Security Policies</span>
+                    </button>
+                  </div>
+
+                  {/* Role Inactivity Timeout Controls */}
+                  <div className="bg-bg-base border border-text-main/10 p-5 space-y-4">
+                    <h5 className="text-xs font-bold text-text-main uppercase flex items-center gap-2">
+                      <KeyRound className="w-4 h-4 text-accent" />
+                      <span>Role Inactivity Session Timeout Durations</span>
+                    </h5>
+                    <p className="text-[11px] text-text-main/60">
+                      When an admin account is inactive for the duration specified below, the session is automatically invalidated and locked.
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2">
+                      {(Object.keys(roleSessionTimeouts) as RoleTier[]).map((role) => (
+                        <div key={role} className="p-3 bg-bg-panel border border-text-main/10 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-text-main">{role}</span>
+                            <span className="text-[10px] px-2 py-0.5 bg-accent/10 text-accent font-bold rounded">
+                              Tier {role === 'Super Admin' ? '1' : role === 'Flight Dispatcher' ? '2' : role === 'Trail Marshal' ? '3' : role === 'Ops Inspector' ? '4' : '5'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={roleSessionTimeouts[role]}
+                              onChange={(e) => setRoleSessionTimeouts({ ...roleSessionTimeouts, [role]: Number(e.target.value) })}
+                              className="w-full bg-bg-base border border-text-main/20 p-2 text-xs font-bold text-text-main outline-none focus:border-accent cursor-pointer"
+                            >
+                              <option value={5}>5 Minutes (Maximum Security)</option>
+                              <option value={15}>15 Minutes (Recommended)</option>
+                              <option value={30}>30 Minutes</option>
+                              <option value={60}>1 Hour</option>
+                              <option value={120}>2 Hours</option>
+                              <option value={240}>4 Hours</option>
+                              <option value={480}>8 Hours (Shift Duration)</option>
+                            </select>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* IP Subnet Access Whitelist */}
+                  <div className="bg-bg-base border border-text-main/10 p-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h5 className="text-xs font-bold text-text-main uppercase flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                          <span>Authorized Admin IP Subnet Whitelist</span>
+                        </h5>
+                        <p className="text-[11px] text-text-main/60">Restrict admin panel access strictly to authorized static IP addresses or CIDR blocks</p>
+                      </div>
+                    </div>
+
+                    <form onSubmit={handleAddIpWhitelist} className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="e.g. 192.168.1.50 or 10.0.0.0/16"
+                        value={newIpInput}
+                        onChange={(e) => setNewIpInput(e.target.value)}
+                        className="flex-1 p-2 bg-bg-panel border border-text-main/20 text-xs text-text-main outline-none focus:border-accent font-mono"
+                      />
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-accent text-bg-base text-xs font-bold uppercase cursor-pointer hover:bg-accent/90"
+                      >
+                        + Add IP Subnet
+                      </button>
+                    </form>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 pt-2">
+                      {ipWhitelist.map((ip) => (
+                        <div key={ip} className="p-2.5 bg-bg-panel border border-text-main/10 flex items-center justify-between text-xs font-mono">
+                          <span className="text-text-main font-bold">{ip}</span>
+                          <button
+                            onClick={() => handleRemoveIpWhitelist(ip)}
+                            className="text-text-main/40 hover:text-red-400 transition-colors p-1"
+                            title="Remove IP"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Security Compliance Flags */}
+                  <div className="bg-bg-base border border-text-main/10 p-5 space-y-4">
+                    <h5 className="text-xs font-bold text-text-main uppercase flex items-center gap-2">
+                      <Lock className="w-4 h-4 text-accent" />
+                      <span>System Security Policies</span>
+                    </h5>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                      <label className="p-3 bg-bg-panel border border-text-main/10 flex items-center justify-between cursor-pointer">
+                        <div>
+                          <div className="font-bold text-text-main">Multi-Factor Authentication (MFA)</div>
+                          <div className="text-[10px] text-text-main/60">Require TOTP authenticator token for all admin tiers</div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={mfaPolicyEnforced}
+                          onChange={(e) => setMfaPolicyEnforced(e.target.checked)}
+                          className="w-4 h-4 accent-accent cursor-pointer"
+                        />
+                      </label>
+
+                      <label className="p-3 bg-bg-panel border border-text-main/10 flex items-center justify-between cursor-pointer">
+                        <div>
+                          <div className="font-bold text-text-main">Automatic Screen Lock</div>
+                          <div className="text-[10px] text-text-main/60">Lock panel instantly when tab switches or hides</div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={idleAutoLock}
+                          onChange={(e) => setIdleAutoLock(e.target.checked)}
+                          className="w-4 h-4 accent-accent cursor-pointer"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 10: AUDIT LOGS */}
+              {activeTab === 'auditLogs' && (
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-text-main/10 pb-4">
+                    <div>
+                      <h4 className="text-sm font-bold text-accent uppercase flex items-center gap-2">
+                        <History className="w-5 h-5 text-accent" />
+                        <span>SECURITY AUDIT & COMMAND LOG HISTORY</span>
+                      </h4>
+                      <p className="text-[10px] text-text-main/60 uppercase">Real-time immutable log of admin operator actions, credential changes, and system dispatches</p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleExportAuditLogsCSV}
+                        className="px-3 py-2 border border-text-main/20 hover:border-accent text-xs font-bold uppercase flex items-center gap-1.5 cursor-pointer transition-colors"
+                      >
+                        <FileDown className="w-4 h-4" />
+                        <span>Export CSV</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setAuditLogs([]);
+                          localStorage.removeItem('admin_audit_logs');
+                          showNotification('✓ AUDIT LOG CLEAR DISPATCH RECORDED');
+                        }}
+                        className="px-3 py-2 border border-red-500/30 text-red-400 hover:bg-red-500/10 text-xs font-bold uppercase flex items-center gap-1.5 cursor-pointer transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Clear Logs</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Log Filters */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="relative flex-1 w-full">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-main/40" />
+                      <input
+                        type="text"
+                        placeholder="Filter audit logs by operator, action, or IP address..."
+                        value={logSearch}
+                        onChange={(e) => setLogSearch(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 bg-bg-base border border-text-main/20 text-xs text-text-main outline-none focus:border-accent"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      {(['ALL', 'SUCCESS', 'WARN', 'INFO'] as const).map((st) => (
+                        <button
+                          key={st}
+                          onClick={() => setLogFilterStatus(st)}
+                          className={`px-3 py-1.5 text-[10px] font-bold uppercase border cursor-pointer ${
+                            logFilterStatus === st
+                              ? 'bg-accent text-bg-base border-accent'
+                              : 'bg-bg-base text-text-main/60 border-text-main/20 hover:text-text-main'
+                          }`}
+                        >
+                          {st}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Logs Stream List */}
+                  <div className="bg-bg-base border border-text-main/10 divide-y divide-text-main/10 max-h-[500px] overflow-y-auto">
+                    {auditLogs
+                      .filter(log => {
+                        const matchSearch = log.action.toLowerCase().includes(logSearch.toLowerCase()) ||
+                          log.operator.toLowerCase().includes(logSearch.toLowerCase()) ||
+                          log.ip.toLowerCase().includes(logSearch.toLowerCase());
+                        const matchStatus = logFilterStatus === 'ALL' || log.status === logFilterStatus;
+                        return matchSearch && matchStatus;
+                      })
+                      .map((log) => (
+                        <div key={log.id} className="p-3 text-xs font-mono flex flex-col md:flex-row items-start md:items-center justify-between gap-2 hover:bg-bg-panel/50 transition-colors">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`px-2 py-0.5 text-[9px] font-bold rounded uppercase border ${
+                                log.status === 'SUCCESS' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                                log.status === 'WARN' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
+                                'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                              }`}>
+                                {log.status}
+                              </span>
+                              <span className="font-bold text-text-main">{log.id}</span>
+                              <span className="text-[10px] text-text-main/50">• {log.timestamp}</span>
+                            </div>
+                            <p className="text-text-main/80 font-bold">{log.action}</p>
+                          </div>
+
+                          <div className="text-[10px] text-text-main/60 flex items-center gap-3 shrink-0">
+                            <span>Op: <strong className="text-accent">{log.operator}</strong> ({log.role})</span>
+                            <span className="px-1.5 py-0.5 bg-bg-panel border border-text-main/20">{log.ip}</span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 11: AUTOMATED BACKUP & DISASTER RECOVERY */}
+              {activeTab === 'backupRecovery' && (
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-text-main/10 pb-4">
+                    <div>
+                      <h4 className="text-sm font-bold text-accent uppercase flex items-center gap-2">
+                        <HardDrive className="w-5 h-5 text-accent" />
+                        <span>AUTOMATED SYSTEM BACKUP & DISASTER RECOVERY</span>
+                      </h4>
+                      <p className="text-[10px] text-text-main/60 uppercase">Manage automatic snapshot schedules, full JSON system exports, and instant disaster recovery</p>
+                    </div>
+
+                    <button
+                      onClick={handleCreateSnapshot}
+                      className="px-4 py-2 bg-accent text-bg-base text-xs font-bold uppercase flex items-center gap-2 cursor-pointer shadow-md hover:bg-accent/90 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>+ Take Manual Snapshot</span>
+                    </button>
+                  </div>
+
+                  {/* Auto Backup Interval Config */}
+                  <div className="bg-bg-base border border-text-main/10 p-5 space-y-4">
+                    <h5 className="text-xs font-bold text-text-main uppercase flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-accent" />
+                      <span>Automated Snapshot Backup Schedule</span>
+                    </h5>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+                      {(['HOURLY', 'DAILY', 'WEEKLY', 'OFF'] as const).map((interval) => (
+                        <button
+                          key={interval}
+                          onClick={() => {
+                            setAutoBackupInterval(interval);
+                            localStorage.setItem('admin_autobackup_interval', interval);
+                            addAuditLog(`SET AUTO BACKUP SCHEDULE TO ${interval}`, 'INFO');
+                            showNotification(`✓ AUTO-BACKUP SCHEDULE UPDATED TO ${interval}`);
+                          }}
+                          className={`p-3 border font-bold text-center cursor-pointer transition-colors ${
+                            autoBackupInterval === interval
+                              ? 'bg-accent/20 border-accent text-accent'
+                              : 'bg-bg-panel border-text-main/10 text-text-main/70 hover:text-text-main'
+                          }`}
+                        >
+                          <div className="uppercase">{interval}</div>
+                          <div className="text-[9px] font-normal text-text-main/50 mt-1">
+                            {interval === 'HOURLY' ? 'Every 60 Minutes' : interval === 'DAILY' ? 'Every 24 Hours' : interval === 'WEEKLY' ? 'Every 7 Days' : 'Disabled'}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* JSON Import / Export System State */}
+                  <div className="bg-bg-base border border-text-main/10 p-5 space-y-4">
+                    <h5 className="text-xs font-bold text-text-main uppercase flex items-center gap-2">
+                      <FileDown className="w-4 h-4 text-accent" />
+                      <span>Full System State Export / Import</span>
+                    </h5>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="p-4 bg-bg-panel border border-text-main/10 space-y-3">
+                        <span className="font-bold text-xs text-text-main block">Export System Database (.JSON)</span>
+                        <p className="text-[11px] text-text-main/60">Download complete expedition manifests, permit logs, users, and safety settings to a portable file.</p>
+                        <button
+                          onClick={handleExportJson}
+                          className="w-full py-2 bg-accent text-bg-base text-xs font-bold uppercase cursor-pointer hover:bg-accent/90"
+                        >
+                          Download Full JSON Backup
+                        </button>
+                      </div>
+
+                      <div className="p-4 bg-bg-panel border border-text-main/10 space-y-3">
+                        <span className="font-bold text-xs text-text-main block">Restore System State from (.JSON)</span>
+                        <p className="text-[11px] text-text-main/60">Upload a previously saved JSON snapshot file to restore expedition system state.</p>
+                        <label className="w-full py-2 bg-bg-base border border-accent/40 text-accent text-xs font-bold uppercase cursor-pointer text-center block hover:border-accent">
+                          Upload & Restore JSON File
+                          <input type="file" accept=".json" onChange={handleImportJson} className="hidden" />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Snapshot History Table */}
+                  <div className="bg-bg-base border border-text-main/10 p-5 space-y-3">
+                    <h5 className="text-xs font-bold text-text-main uppercase flex items-center justify-between">
+                      <span>Recorded System Snapshots ({backupSnapshots.length})</span>
+                      <span className="text-[10px] text-emerald-400 font-bold">100% RECOVERY READY</span>
+                    </h5>
+
+                    <div className="space-y-2">
+                      {backupSnapshots.map((snap) => (
+                        <div key={snap.id} className="p-3 bg-bg-panel border border-text-main/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-mono">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-text-main">{snap.id}</span>
+                              <span className="text-[9px] px-2 py-0.5 bg-accent/10 border border-accent/30 text-accent font-bold">
+                                {snap.type}
+                              </span>
+                              <span className="text-[10px] text-text-main/50">{snap.size}</span>
+                            </div>
+                            <div className="text-[10px] text-text-main/60 mt-1">
+                              Timestamp: {snap.timestamp} • Engine: {snap.version}
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleRestoreSnapshot(snap.id)}
+                            className="px-3 py-1.5 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-bold uppercase cursor-pointer transition-colors"
+                          >
+                            Restore Snapshot
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Right Column: Split Preview Pane (when splitPreview is true) */}
+            {splitPreview && (
+              <div className="bg-bg-base/95 border border-accent/30 p-5 rounded-lg space-y-5 overflow-y-auto h-full flex flex-col shadow-inner">
+                {/* Live Preview Header */}
+                <div className="flex items-center justify-between border-b border-text-main/10 pb-3 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                    <h4 className="text-xs font-black uppercase text-accent tracking-wider flex items-center gap-1.5">
+                      <Eye className="w-4 h-4 text-accent" />
+                      <span>LIVE APPLICATION PREVIEW VERIFICATION</span>
+                    </h4>
+                  </div>
+                  <span className="text-[9px] font-bold px-2 py-0.5 bg-accent/20 border border-accent/40 text-accent font-mono">
+                    REAL-TIME SYNC ON
+                  </span>
+                </div>
+
+                {/* Live Broadcast Banner Preview */}
+                {broadcastActive && (
+                  <div className={`p-3 text-xs font-bold font-mono text-center flex items-center justify-between border shadow-md animate-pulse ${
+                    alertSeverity === 'EMERGENCY' 
+                      ? 'bg-red-500/20 text-red-400 border-red-500/50' 
+                      : alertSeverity === 'WARNING'
+                      ? 'bg-amber-500/20 text-amber-400 border-amber-500/50'
+                      : 'bg-blue-500/20 text-blue-400 border-blue-500/50'
+                  }`}>
+                    <div className="flex items-center gap-2 mx-auto">
+                      <Siren className="w-4 h-4 shrink-0" />
+                      <span>[LIVE BROADCAST ALERT] {broadcastText}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* System Theme & Active Accent Banner Preview */}
+                <div className="p-3 bg-bg-panel border border-text-main/10 flex items-center justify-between text-xs font-mono">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3.5 h-3.5 rounded-full border border-white/20 shrink-0" style={{ backgroundColor: accentColor }} />
+                    <span className="text-text-main font-bold">Accent Theme: <span style={{ color: accentColor }}>{accentColor}</span></span>
+                  </div>
+                  <span className="text-[10px] text-text-main/60 uppercase">Global CSS Variables</span>
+                </div>
+
+                {/* Live Destination Manifests & Trail Status Grid Preview */}
+                <div className="space-y-3 grow">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-text-main/60 uppercase border-b border-text-main/10 pb-1">
+                    <span>LIVE MANIFESTS ({destinations.length}) & TRAIL ADVISORIES</span>
+                    <span>AVALANCHE RISK</span>
+                  </div>
+
+                  <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                    {destinations.map((dest) => {
+                      const status = trailStatuses[dest.id] || 'OPEN';
+                      const risk = avalancheRiskLevels[dest.id] || 1;
+
+                      return (
+                        <div key={dest.id} className="p-3 bg-bg-panel border border-text-main/10 flex items-center justify-between gap-3 text-xs">
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <img src={dest.image} alt={dest.name} className="w-10 h-10 object-cover shrink-0 rounded border border-text-main/10" />
+                            <div className="truncate">
+                              <div className="font-bold text-text-main truncate">{dest.name}</div>
+                              <div className="text-[10px] text-text-main/60 truncate">{dest.location}</div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0">
+                            <span className={`px-2 py-0.5 text-[9px] font-bold uppercase rounded border ${
+                              status === 'OPEN' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                              status === 'CAUTION' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
+                              'bg-red-500/20 text-red-400 border-red-500/30'
+                            }`}>
+                              {status}
+                            </span>
+
+                            <span className={`px-2 py-0.5 text-[9px] font-bold border rounded ${
+                              risk >= 4 ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                              risk >= 3 ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
+                              'bg-accent/20 text-accent border-accent/30'
+                            }`}>
+                              Lvl {risk}/5 Risk
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Live Rescue Units Summary Preview */}
+                <div className="p-3 bg-bg-panel border border-text-main/10 space-y-2 text-xs">
+                  <div className="flex items-center justify-between font-bold text-text-main">
+                    <span className="flex items-center gap-1.5"><Crosshair className="w-3.5 h-3.5 text-accent" /> Air Rescue SAR Units</span>
+                    <span className="text-[10px] text-accent font-mono">{airRescueUnits.filter(u => u.status === 'AIRBORNE' || u.status === 'DISPATCHED').length} Active Missions</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-[10px] text-text-main/70">
+                    {airRescueUnits.slice(0, 3).map(u => (
+                      <div key={u.id} className="p-1.5 bg-bg-base border border-text-main/10 truncate text-center">
+                        <div className="font-bold text-text-main truncate">{u.callsign}</div>
+                        <div className={`text-[9px] font-bold ${u.status === 'AIRBORNE' || u.status === 'DISPATCHED' ? 'text-red-400' : 'text-emerald-400'}`}>{u.status}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Live Account Access Credentials Summary */}
+                <div className="p-3 bg-bg-panel border border-text-main/10 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <UserCheck className="w-4 h-4 text-accent" />
+                    <span className="font-bold text-text-main">Authorized Secondary Admins: {accountUsers.filter(u => u.status === 'ACTIVE').length} Active</span>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 bg-accent/10 border border-accent/30 text-accent font-bold">
+                    TIERED ACCESS
+                  </span>
+                </div>
+
+              </div>
+            )}
+
+          </div>
         </div>
-      </motion.div>
+      </div>
     </motion.div>
-  );
+  </motion.div>
+);
 }
 
 
