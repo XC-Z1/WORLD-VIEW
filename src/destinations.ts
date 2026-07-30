@@ -26,6 +26,14 @@ export const destinations = [
     historyImage: "https://images.unsplash.com/photo-1544198365-f5d60b6d8190?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
     historyCalloutLabel: "Khumbu Icefall",
     historyCalloutValue: "5,486 m",
+    gallery: [
+      { url: "https://images.unsplash.com/photo-1522163182402-834f871fd851?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Summit Horizon", caption: "Dawn breaks over the highest peak on Earth." },
+      { url: "https://images.unsplash.com/photo-1544198365-f5d60b6d8190?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80", title: "Khumbu Icefall", caption: "The perilous, shifting labyrinth of ice." },
+      { url: "https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "High Altitude Camp", caption: "Expedition tents perched against winter storms." },
+      { url: "https://images.unsplash.com/photo-1518098268026-4e89f1a2cd8a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Himalayan Ridge", caption: "Alpenglow illuminating pristine snow summits." },
+      { url: "https://images.unsplash.com/photo-1589182373726-e4f658ab50f0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Base Camp Prayer Flags", caption: "Traditional flags whispering prayers in mountain winds." },
+      { url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Golden Hour Peaks", caption: "Sunlight fading across distant Himalayan spires." }
+    ]
   },
   {
     id: 2,
@@ -54,6 +62,14 @@ export const destinations = [
     historyImage: "https://images.unsplash.com/photo-1483728642387-6c3ba6c66c75?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
     historyCalloutLabel: "Base Camp",
     historyCalloutValue: "5,117 m",
+    gallery: [
+      { url: "https://images.unsplash.com/photo-1528892677828-8862216f3665?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "The Pyramid Peak", caption: "The sheer, imposing silhouette of K2." },
+      { url: "https://images.unsplash.com/photo-1483728642387-6c3ba6c66c75?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80", title: "Glacial Ridge", caption: "Traversing frozen Karakoram couloirs." },
+      { url: "https://images.unsplash.com/photo-1465056836041-7f43ac27dcb5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Baltoro Glacier", caption: "Endless rivers of ice leading to the Savage Mountain." },
+      { url: "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Jagged Spires", caption: "Sharp rock towers surrounding Karakoram." },
+      { url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Wilderness Horizon", caption: "Untamed terrain beneath clear high-altitude skies." },
+      { url: "https://images.unsplash.com/photo-1519681393784-d120267933ba?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Starlight over Summit", caption: "Cosmic skies over sub-zero heights." }
+    ]
   },
   {
     id: 3,
@@ -82,6 +98,14 @@ export const destinations = [
     historyImage: "https://images.unsplash.com/photo-1542051812871-7575058e4bb9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
     historyCalloutLabel: "Yoshida Trail",
     historyCalloutValue: "2,300 m",
+    gallery: [
+      { url: "https://images.unsplash.com/photo-1498855926480-d98e83099315?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Lake Kawaguchiko Reflection", caption: "Symmetrical reflections on serene mountain waters." },
+      { url: "https://images.unsplash.com/photo-1542051812871-7575058e4bb9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80", title: "Chureito Pagoda View", caption: "Spring cherry blossoms framing the sacred cone." },
+      { url: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Cherry Blossom Dawn", caption: "Sakura in bloom under early morning sunlight." },
+      { url: "https://images.unsplash.com/photo-1578637387939-43c525550085?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Snow-capped Stratovolcano", caption: "Winter mantle draping the symmetrical summit." },
+      { url: "https://images.unsplash.com/photo-1528164344705-47542687990d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Twilight Skyline", caption: "Gradient sunset colors painting the horizon." },
+      { url: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Fuji Crater Trail", caption: "Pilgrimage paths winding to the volcanic rim." }
+    ]
   },
   {
     id: 4,
@@ -110,6 +134,14 @@ export const destinations = [
     historyImage: "https://images.unsplash.com/photo-1557401622-6b99decd5e81?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
     historyCalloutLabel: "Heritage Site",
     historyCalloutValue: "UNESCO",
+    gallery: [
+      { url: "https://upload.wikimedia.org/wikipedia/commons/0/05/Dense_Mangrove_Forest_of_the_Sundarban_Tiger_Reserve_during_High_Tide%2C_West_Bengal%2C_India_03.jpg", title: "High Tide Mangroves", caption: "Dense pneumatophore root systems rising from the tides." },
+      { url: "https://images.unsplash.com/photo-1557401622-6b99decd5e81?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80", title: "Tidal Estuary Network", caption: "Serpentine rivers weaving through virgin forest." },
+      { url: "https://images.unsplash.com/photo-1546182990-dffeafbe841d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Royal Bengal Tiger Realm", caption: "Untamed sanctuary for apex predators." },
+      { url: "https://images.unsplash.com/photo-1511497584788-876761c11969?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Mangrove Forest Canopy", caption: "Lush green wilderness guarding the delta." },
+      { url: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Delta Morning Rays", caption: "Golden sunlight piercing tropical mist." },
+      { url: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Sundarbans Waterway Expedition", caption: "Exploring isolated channels by wooden boats." }
+    ]
   },
   {
     id: 5,
@@ -138,6 +170,14 @@ export const destinations = [
     historyImage: "https://images.unsplash.com/photo-1589311685375-74943f25c7e1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
     historyCalloutLabel: "Ruilui Para",
     historyCalloutValue: "Village",
+    gallery: [
+      { url: "https://upload.wikimedia.org/wikipedia/commons/b/b8/Sunrise_at_Sajek_Valley.jpg", title: "Sunrise over Sajek", caption: "Vibrant dawn colors spilling across cloud ocean." },
+      { url: "https://images.unsplash.com/photo-1589311685375-74943f25c7e1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80", title: "Lush Green Valleys", caption: "Rolling green hills of the Chittagong Hill Tracts." },
+      { url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Misty Valley Horizon", caption: "Clouds floating gently over hilltop settlements." },
+      { url: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Kasalong Mountain Trails", caption: "Winding roads cutting through mountain fog." },
+      { url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Indigenous Village Culture", caption: "Peaceful life nestled in high hill tracts." },
+      { url: "https://images.unsplash.com/photo-1519681393784-d120267933ba?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Ruilui Para Starlight", caption: "Crisp mountain night skies above the valley." }
+    ]
   },
   {
     id: 6,
@@ -166,5 +206,13 @@ export const destinations = [
     historyImage: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
     historyCalloutLabel: "Marine Drive",
     historyCalloutValue: "80 km",
+    gallery: [
+      { url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Golden Shoreline", caption: "Endless unbroken sands stretching to the horizon." },
+      { url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80", title: "Bay of Bengal Sunset", caption: "Dramatic fiery sunsets over oceanic waters." },
+      { url: "https://images.unsplash.com/photo-1519046904884-53103b34b206?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Gentle Ocean Waves", caption: "Rhythmic tides brushing against warm sands." },
+      { url: "https://images.unsplash.com/photo-1509233725247-49e657c54213?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Marine Drive Scenic Coastal Road", caption: "World's longest marine drive hugging coastal cliffs." },
+      { url: "https://images.unsplash.com/photo-1473116763249-2faaef81ccda?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Tropical Sea Breeze", caption: "Golden hour glow across palm-fringed shores." },
+      { url: "https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", title: "Coastal Horizon", caption: "Expansive ocean vistas under open skies." }
+    ]
   }
 ];
