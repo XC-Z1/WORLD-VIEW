@@ -9,3 +9,20 @@
   --font-serif: "Playfair Display", serif;
   --font-sans: "Inter", sans-serif;
 }
+
+:root {
+  --color-bg-base: #0F1419;
+  --color-bg-panel: #1A1F26;
+  --color-text-main: #E0D8D0;
+  --color-accent: #F27D26;
+  color-scheme: dark;
+}
+
+:root.light-theme,
+body.light-theme {
+  --color-bg-base: #FAFAFA;
+  --color-bg-panel: #FFFFFF;
+  --color-text-main: #0A0D12;
+  --color-accent: #D95300;
+  color-scheme: light;
+}

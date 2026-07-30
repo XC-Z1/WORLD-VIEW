@@ -1,7 +1,11 @@
 import { motion, useScroll, useTransform, AnimatePresence, useInView } from 'motion/react';
-import { Mountain, Compass, Wind, ThermometerSnowflake, Users, Map, MoreVertical, ExternalLink, TreePine, Waves, CloudRain, Volume2, VolumeX, Search, ArrowDown, ArrowUp, ArrowRight, Images, X, ChevronLeft, ChevronRight, Maximize2, ZoomIn, ShieldAlert, CheckSquare, Square, Layers, Navigation, Radio, Sparkles, Sliders, CheckCircle2, Circle, Shield, Flame, Calculator, Calendar, DollarSign, CloudSun, Send, Check, BarChart3, Scale, RefreshCw, Info, Clock, AlertTriangle, Star, MessageSquare, PhoneCall, Play, Pause, Headphones, TrendingUp, AlertCircle, Award, ThumbsUp, Plus, SlidersHorizontal, Printer, FileText, Backpack, Crosshair, Target, Download, HelpCircle, HeartPulse, FileCheck, Eye, Camera, Activity as ActivityIcon, Globe, Radar, BookOpen, LifeBuoy, CreditCard, PieChart, Sun, Moon, Sunrise, Sunset, Dumbbell, Mic, Utensils, Maximize, CloudLightning, Leaf, Video, UserCheck, BadgeCheck, FileDown, Share2, Siren, Apple, Languages, Share, Trash2, Edit3, Save, Database, Upload, Settings, Terminal } from 'lucide-react';
+import { Mountain, Compass, Wind, ThermometerSnowflake, Users, Map, MoreVertical, ExternalLink, TreePine, Waves, CloudRain, Volume2, VolumeX, Search, ArrowDown, ArrowUp, ArrowRight, Images, X, ChevronLeft, ChevronRight, Maximize2, ZoomIn, ShieldAlert, CheckSquare, Square, Layers, Navigation, Radio, Sparkles, Sliders, CheckCircle2, Circle, Shield, Flame, Calculator, Calendar, DollarSign, CloudSun, Send, Check, BarChart3, Scale, RefreshCw, Info, Clock, AlertTriangle, Star, MessageSquare, PhoneCall, Play, Pause, Headphones, TrendingUp, AlertCircle, Award, ThumbsUp, Plus, SlidersHorizontal, Printer, FileText, Backpack, Crosshair, Target, Download, HelpCircle, HeartPulse, FileCheck, Eye, Camera, Activity as ActivityIcon, Globe, Radar, BookOpen, LifeBuoy, CreditCard, PieChart, Sun, Moon, Sunrise, Sunset, Dumbbell, Mic, Utensils, Maximize, CloudLightning, Leaf, Video, UserCheck, BadgeCheck, FileDown, Share2, Siren, Apple, Languages, Share, Trash2, Edit3, Save, Database, Upload, Settings, Terminal, Battery, BatteryCharging, BatteryWarning, Zap, Thermometer } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
 import { destinations as defaultDestinations } from './destinations';
+import { AdminLogin } from './components/AdminLogin';
+import { AdminGuard } from './components/AdminGuard';
+import { SUPPORTED_LANGUAGES, LanguageCode, getTranslation } from './translations';
+import { useLanguage } from './context/LanguageContext';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 40, filter: 'blur(10px)' },
@@ -21,6 +25,32 @@ const staggerContainer = {
       staggerChildren: 0.3,
       delayChildren: 0.2
     }
+  }
+};
+
+const galleryStagger = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.1
+    }
+  }
+};
+
+const galleryItemFadeIn = {
+  hidden: { opacity: 0, y: 45, scale: 0.9, rotate: -2, filter: 'blur(12px)' },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    rotate: 0,
+    filter: 'blur(0px)',
+    transition: { 
+      duration: 0.8, 
+      ease: [0.16, 1, 0.3, 1]
+    } 
   }
 };
 
@@ -62,6 +92,7 @@ const Particles = () => {
 
 
 export default function App() {
+  const { currentLang, setLanguage, t, translateDestination } = useLanguage();
   const [destinations, setDestinations] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem('custom_destinations');
@@ -87,7 +118,27 @@ export default function App() {
   const [heroMousePos, setHeroMousePos] = useState({ x: 50, y: 50 });
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      const saved = localStorage.getItem('app_theme') as 'dark' | 'light';
+      if (saved) return saved;
+    } catch (e) {}
+    return 'dark';
+  });
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.documentElement.classList.add('light-theme');
+      document.body.classList.add('light-theme');
+    } else {
+      document.documentElement.classList.remove('light-theme');
+      document.body.classList.remove('light-theme');
+    }
+    try {
+      localStorage.setItem('app_theme', theme);
+    } catch (e) {}
+  }, [theme]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -100,6 +151,17 @@ export default function App() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        setIsAdminOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const scrollToTop = () => {
@@ -162,7 +224,12 @@ export default function App() {
   }, [isLoaded]);
 
   const activeDestinations = destinations.length > 0 ? destinations : defaultDestinations;
-  const dest = activeDestinations[activeIndex] || activeDestinations[0] || defaultDestinations[0];
+  const translatedDestinations = React.useMemo(() => {
+    return activeDestinations.map(d => translateDestination(d));
+  }, [activeDestinations, currentLang, translateDestination]);
+
+  const rawDest = activeDestinations[activeIndex] || activeDestinations[0] || defaultDestinations[0];
+  const dest = translateDestination(rawDest);
 
   const getIcon = (iconName: string) => {
     switch (iconName) {
@@ -214,7 +281,7 @@ export default function App() {
       
       {/* Fixed Sidebar Navigation */}
       <div className="fixed right-8 top-1/2 -translate-y-1/2 z-50 hidden md:flex flex-col gap-6 items-end">
-        {destinations.map((m, index) => (
+        {translatedDestinations.map((m, index) => (
           <button 
             key={m.id} 
             onClick={() => {
@@ -234,7 +301,7 @@ export default function App() {
       {/* Mobile Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex justify-between px-4 pb-6 pt-12 bg-gradient-to-t from-bg-base via-bg-base/90 to-transparent pointer-events-none">
         <div className="flex justify-center gap-3 w-full pointer-events-auto">
-          {destinations.map((m, index) => (
+          {translatedDestinations.map((m, index) => (
             <button 
               key={m.id} 
               onClick={() => {
@@ -281,7 +348,7 @@ export default function App() {
               >
                 <input
                   type="text"
-                  placeholder="Search destination..."
+                  placeholder={t('nav.search', 'Search destinations...')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-bg-panel/80 backdrop-blur-md border border-text-main/20 text-text-main h-12 px-4 outline-none focus:border-accent transition-colors shadow-2xl"
@@ -289,7 +356,7 @@ export default function App() {
                 />
                 {searchQuery && (
                   <div className="absolute top-full right-0 mt-2 w-64 max-h-64 overflow-y-auto bg-bg-panel/90 backdrop-blur-xl border border-text-main/10 shadow-2xl z-50">
-                    {destinations
+                    {translatedDestinations
                       .map((d, idx) => ({ ...d, originalIndex: idx }))
                       .filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()) || d.location.toLowerCase().includes(searchQuery.toLowerCase()))
                       .map(d => (
@@ -367,26 +434,67 @@ export default function App() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
-                className="absolute right-0 mt-4 top-full w-64 bg-bg-panel/90 backdrop-blur-xl border border-text-main/10 shadow-2xl overflow-hidden p-2 z-50"
+                className="absolute right-0 mt-4 top-full w-60 bg-bg-panel/90 backdrop-blur-xl border border-text-main/10 shadow-2xl overflow-hidden p-2 z-50"
               >
+                {/* High Contrast Light Theme Toggle Switch */}
                 <button 
-                  onClick={() => {
-                    setIsAdminOpen(true);
-                    setIsMenuOpen(false);
-                  }}
-                  className="w-full flex items-center justify-between p-4 group hover:bg-bg-base/50 transition-colors cursor-pointer text-left border-b border-text-main/10"
+                  onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+                  className="w-full flex items-center justify-between p-3.5 group hover:bg-bg-base/50 transition-colors cursor-pointer text-left border-b border-text-main/10"
                 >
-                  <span className="font-sans text-[10px] uppercase tracking-[0.2em] font-bold text-accent transition-colors">⚙️ Admin Command Panel</span>
-                  <Settings className="w-4 h-4 text-accent" />
+                  <div className="flex items-center gap-2.5">
+                    {theme === 'dark' ? (
+                      <Sun className="w-4 h-4 text-accent shrink-0" />
+                    ) : (
+                      <Moon className="w-4 h-4 text-accent shrink-0" />
+                    )}
+                    <span className="font-sans text-[10px] uppercase tracking-[0.18em] font-bold text-text-main group-hover:text-accent transition-colors">
+                      {theme === 'dark' ? t('nav.theme.light', 'Light Theme') : t('nav.theme.dark', 'Dark Theme')}
+                    </span>
+                  </div>
+                  <div className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-300 flex items-center ${theme === 'light' ? 'bg-accent' : 'bg-text-main/30'}`}>
+                    <motion.div 
+                      layout 
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      className={`w-4 h-4 rounded-full bg-bg-base shadow-sm ${theme === 'light' ? 'ml-auto' : 'mr-auto'}`} 
+                    />
+                  </div>
                 </button>
+
+                {/* Global Language Selector */}
+                <div className="p-3 border-b border-text-main/10 space-y-2">
+                  <div className="flex items-center gap-2 px-0.5 text-text-main/60">
+                    <Languages className="w-3.5 h-3.5 text-accent shrink-0" />
+                    <span className="font-sans text-[9px] uppercase tracking-[0.2em] font-bold">
+                      {t('nav.language', 'Language')}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                    {SUPPORTED_LANGUAGES.map((langOption) => (
+                      <button
+                        key={langOption.code}
+                        onClick={() => setLanguage(langOption.code)}
+                        className={`flex items-center gap-2 px-2.5 py-1.5 text-[10px] font-sans transition-all cursor-pointer border ${
+                          currentLang === langOption.code
+                            ? 'bg-accent/20 border-accent text-accent font-bold shadow-sm'
+                            : 'bg-bg-base/40 border-text-main/10 text-text-main/80 hover:bg-bg-base hover:text-text-main'
+                        }`}
+                      >
+                        <span className="text-xs">{langOption.flag}</span>
+                        <span className="truncate">{langOption.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
                 <a 
                   href="https://techmster.site/xcz/" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="flex items-center justify-between p-4 group hover:bg-bg-base/50 transition-colors cursor-pointer"
+                  className="flex items-center justify-between p-3.5 group hover:bg-bg-base/50 transition-colors cursor-pointer"
                 >
-                  <span className="font-sans text-[10px] uppercase tracking-[0.2em] font-bold text-text-main group-hover:text-accent transition-colors">See Developer</span>
+                  <span className="font-sans text-[10px] uppercase tracking-[0.2em] font-bold text-text-main group-hover:text-accent transition-colors">
+                    {t('nav.developer', 'See Developer')}
+                  </span>
                   <ExternalLink className="w-4 h-4 text-text-main/50 group-hover:text-accent transition-colors" />
                 </a>
               </motion.div>
@@ -493,7 +601,7 @@ export default function App() {
                 className="absolute bottom-12 right-8 md:right-16 flex items-center gap-4 hidden sm:flex mix-blend-screen"
               >
                 <div className="flex flex-col items-end text-right font-sans text-[10px] tracking-[0.3em] uppercase text-text-main/60">
-                  <span className="font-bold text-accent">EXPLORE ARCHIVE</span>
+                  <span className="font-bold text-accent">{getTranslation(currentLang, 'hero.explore_archive', 'EXPLORE ARCHIVE')}</span>
                   <span>{dest.location}</span>
                 </div>
                 <motion.div 
@@ -745,11 +853,22 @@ export default function App() {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="flex gap-4 relative z-10"
+          className="flex items-center gap-6 relative z-10"
         >
-          <motion.div animate={{ opacity: [1, 0.5, 1] }} transition={{ duration: 2, repeat: Infinity }} className="w-3 h-3 bg-bg-base shadow-[0_0_10px_rgba(255,255,255,0.8)]"></motion.div>
-          <div className="w-3 h-3 border border-bg-base/30"></div>
-          <div className="w-3 h-3 border border-bg-base/30"></div>
+          <button
+            onClick={() => setIsAdminOpen(true)}
+            className="text-[10px] font-mono uppercase tracking-[0.2em] font-bold text-bg-base/80 hover:text-bg-base transition-colors flex items-center gap-1.5 cursor-pointer bg-bg-base/10 px-3 py-1.5 border border-bg-base/20"
+            title="Authorized Admin Access"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            <span>Staff Portal (Protected)</span>
+          </button>
+
+          <div className="flex gap-4">
+            <motion.div animate={{ opacity: [1, 0.5, 1] }} transition={{ duration: 2, repeat: Infinity }} className="w-3 h-3 bg-bg-base shadow-[0_0_10px_rgba(255,255,255,0.8)]"></motion.div>
+            <div className="w-3 h-3 border border-bg-base/30"></div>
+            <div className="w-3 h-3 border border-bg-base/30"></div>
+          </div>
         </motion.div>
       </footer>
       
@@ -776,12 +895,16 @@ export default function App() {
       </AnimatePresence>
 
       {/* Admin Control Command Center Modal */}
-      <AdminControlPanelModal
-        isOpen={isAdminOpen}
-        onClose={() => setIsAdminOpen(false)}
-        destinations={destinations}
-        setDestinations={setDestinations}
-      />
+      <AnimatePresence>
+        {isAdminOpen && (
+          <AdminControlPanelModal
+            isOpen={isAdminOpen}
+            onClose={() => setIsAdminOpen(false)}
+            destinations={destinations}
+            setDestinations={setDestinations}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Floating Tactical Geolocation & Real-time Compass HUD */}
       <DraggableCompass />
@@ -1153,6 +1276,15 @@ function DraggableCompass() {
   const [sensorSource, setSensorSource] = useState<'device' | 'mouse' | 'simulated'>('simulated');
   const [permissionRequested, setPermissionRequested] = useState<boolean>(false);
 
+  // Expedition Power Status Monitoring State
+  const [batteryLevel, setBatteryLevel] = useState<number>(84);
+  const [ambientTemp, setAmbientTemp] = useState<number>(-22);
+  const [isGpsActive, setIsGpsActive] = useState<boolean>(true);
+  const [isRadioActive, setIsRadioActive] = useState<boolean>(false);
+  const [isHighBrightness, setIsHighBrightness] = useState<boolean>(true);
+  const [isHeatingCellActive, setIsHeatingCellActive] = useState<boolean>(false);
+  const [powerSaveMode, setPowerSaveMode] = useState<boolean>(false);
+
   // Geolocation state
   const [geoData, setGeoData] = useState<{
     lat: number | null;
@@ -1173,6 +1305,47 @@ function DraggableCompass() {
   });
 
   const compassRef = useRef<HTMLDivElement>(null);
+
+  // Power Status Calculations
+  const getColdPenaltyFactor = (temp: number, heatingCell: boolean) => {
+    let penalty = 1.0;
+    if (temp < -25) penalty = 4.2;
+    else if (temp < -10) penalty = 2.8;
+    else if (temp < 0) penalty = 1.8;
+    else if (temp < 10) penalty = 1.2;
+
+    if (heatingCell) {
+      penalty = Math.max(1.1, penalty * 0.4);
+    }
+    return penalty;
+  };
+
+  const coldPenalty = getColdPenaltyFactor(ambientTemp, isHeatingCellActive);
+  const baseDraw = 0.8;
+  const gpsDraw = isGpsActive ? 1.5 : 0;
+  const radioDraw = isRadioActive ? 2.2 : 0;
+  const brightnessDraw = isHighBrightness ? 1.0 : 0.3;
+  const heatingDraw = isHeatingCellActive ? 1.8 : 0;
+
+  let totalDrainRate = ((baseDraw + gpsDraw + radioDraw + brightnessDraw) * coldPenalty + heatingDraw);
+  if (powerSaveMode) {
+    totalDrainRate *= 0.5;
+  }
+
+  const hoursRemaining = totalDrainRate > 0 ? (batteryLevel / totalDrainRate) : 99;
+
+  // Real-time subtle simulation loop
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBatteryLevel((prev) => {
+        if (prev <= 0) return 0;
+        const drainStep = (totalDrainRate / 3600) * 3 * 2;
+        return Math.max(0, Number((prev - drainStep).toFixed(2)));
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [totalDrainRate]);
 
   // 1. Device Orientation API Listener (Gyroscope / Compass sensor)
   useEffect(() => {
@@ -1323,16 +1496,25 @@ function DraggableCompass() {
           </motion.div>
         </motion.div>
 
-        {/* Live Degree & GPS Telemetry Badge */}
+        {/* Live Degree, GPS Telemetry & Power Status Badge */}
         <div 
           onClick={() => setIsExpanded(!isExpanded)}
           className="cursor-pointer pr-3 hidden sm:flex flex-col justify-center"
         >
-          <div className="flex items-center gap-1.5 font-mono text-xs font-black text-text-main tracking-tight">
+          <div className="flex items-center gap-2 font-mono text-xs font-black text-text-main tracking-tight">
             <span className="text-accent">{Math.round(rotation)}°</span>
             <span className="px-1.5 py-0.5 bg-accent/20 border border-accent/30 text-accent text-[9px] font-bold rounded">
               {currentCardinal}
             </span>
+
+            {/* Expedition Battery Badge */}
+            <div className="flex items-center gap-1 px-2 py-0.5 bg-bg-base border border-text-main/15 rounded text-[9px] font-mono font-bold ml-1">
+              <Battery className={`w-3 h-3 ${batteryLevel < 20 ? 'text-red-500 animate-pulse' : batteryLevel < 50 ? 'text-amber-500' : 'text-emerald-500'}`} />
+              <span className={batteryLevel < 20 ? 'text-red-500 font-bold' : 'text-text-main'}>
+                {Math.round(batteryLevel)}%
+              </span>
+              <span className="text-text-main/40 text-[8px]">({ambientTemp}°C)</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-1 mt-0.5">
@@ -1357,14 +1539,14 @@ function DraggableCompass() {
             animate={{ opacity: 1, scale: 1, y: -12 }}
             exit={{ opacity: 0, scale: 0.9, y: 10 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="absolute bottom-full left-0 mb-3 w-80 bg-bg-panel/95 backdrop-blur-2xl border border-accent/40 p-5 shadow-2xl text-text-main font-mono text-xs space-y-4 rounded-sm z-[130]"
+            className="absolute bottom-full left-0 mb-3 w-88 md:w-96 bg-bg-panel/95 backdrop-blur-2xl border border-accent/40 p-5 shadow-2xl text-text-main font-mono text-xs space-y-4 rounded-sm z-[130] max-h-[80vh] overflow-y-auto"
           >
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-text-main/10">
               <div className="flex items-center gap-2">
                 <Radar className="w-4 h-4 text-accent animate-spin-slow" />
                 <span className="font-bold uppercase tracking-wider text-[11px] text-accent">
-                  TACTICAL NAVIGATION HUD
+                  TACTICAL NAVIGATION & POWER HUD
                 </span>
               </div>
               <button
@@ -1386,6 +1568,146 @@ function DraggableCompass() {
                 <span className="text-xs font-bold uppercase text-emerald-400">
                   {sensorSource === 'device' ? 'Gyroscope' : sensorSource === 'mouse' ? 'Mouse Angle' : 'Simulated'}
                 </span>
+              </div>
+            </div>
+
+            {/* Expedition Power Status & Cold Temperature Monitor */}
+            <div className="bg-bg-base p-3 border border-text-main/10 space-y-3">
+              <div className="flex items-center justify-between border-b border-text-main/10 pb-2">
+                <div className="flex items-center gap-2">
+                  <BatteryCharging className={`w-4 h-4 ${batteryLevel < 20 ? 'text-red-500 animate-bounce' : 'text-accent'}`} />
+                  <span className="font-bold text-[10px] uppercase tracking-wider text-text-main">
+                    EXPEDITION POWER STATUS
+                  </span>
+                </div>
+                <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase ${
+                  batteryLevel < 20 
+                    ? 'bg-red-500/20 text-red-500 border border-red-500/30' 
+                    : ambientTemp < -15 && !isHeatingCellActive 
+                      ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' 
+                      : 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30'
+                }`}>
+                  {batteryLevel < 20 
+                    ? 'CRITICAL LOW POWER' 
+                    : ambientTemp < -15 && !isHeatingCellActive 
+                      ? 'COLD DISCHARGE PENALTY' 
+                      : 'POWER NOMINAL'}
+                </span>
+              </div>
+
+              {/* Battery Capacity Bar */}
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-[10px]">
+                  <span className="text-text-main/60">BATTERY LEVEL:</span>
+                  <strong className={batteryLevel < 20 ? 'text-red-500' : 'text-accent'}>
+                    {batteryLevel.toFixed(1)}% ({hoursRemaining.toFixed(1)} hrs left)
+                  </strong>
+                </div>
+                <div className="w-full h-2 bg-text-main/10 rounded-full overflow-hidden border border-text-main/10">
+                  <div
+                    className={`h-full transition-all duration-500 ${
+                      batteryLevel < 20 ? 'bg-red-500' : batteryLevel < 50 ? 'bg-amber-500' : 'bg-emerald-500'
+                    }`}
+                    style={{ width: `${Math.max(0, Math.min(100, batteryLevel))}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-[8px] text-text-main/50">
+                  <span>Net Drain: {totalDrainRate.toFixed(2)}%/hr</span>
+                  <span>Cold Factor: {coldPenalty.toFixed(1)}x</span>
+                </div>
+              </div>
+
+              {/* Temperature Control Slider */}
+              <div className="space-y-1.5 pt-1 border-t border-text-main/10">
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-text-main/60 flex items-center gap-1">
+                    <Thermometer className="w-3 h-3 text-accent" />
+                    AMBIENT COLD TEMP:
+                  </span>
+                  <strong className={ambientTemp < 0 ? 'text-cyan-400 font-bold' : 'text-text-main'}>
+                    {ambientTemp}°C ({ambientTemp < 0 ? `${Math.abs(ambientTemp)}° Sub-Zero` : 'Normal'})
+                  </strong>
+                </div>
+                <input
+                  type="range"
+                  min={-35}
+                  max={25}
+                  value={ambientTemp}
+                  onChange={(e) => setAmbientTemp(parseInt(e.target.value))}
+                  className="w-full accent-accent h-1 bg-text-main/10 cursor-pointer"
+                />
+                <div className="flex justify-between text-[8px] text-text-main/40 font-mono">
+                  <span>-35°C Extreme</span>
+                  <span>0°C Freezing</span>
+                  <span>+25°C Normal</span>
+                </div>
+              </div>
+
+              {/* Usage Workloads & Features */}
+              <div className="space-y-1.5 pt-1 border-t border-text-main/10 text-[10px]">
+                <span className="text-[9px] text-text-main/50 font-bold uppercase block">ACTIVE POWER CONSUMPTION WORKLOADS:</span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <label className="flex items-center gap-2 p-1.5 bg-bg-panel border border-text-main/10 cursor-pointer hover:border-accent">
+                    <input
+                      type="checkbox"
+                      checked={isGpsActive}
+                      onChange={(e) => setIsGpsActive(e.target.checked)}
+                      className="accent-accent"
+                    />
+                    <span>GPS Tracking</span>
+                  </label>
+                  <label className="flex items-center gap-2 p-1.5 bg-bg-panel border border-text-main/10 cursor-pointer hover:border-accent">
+                    <input
+                      type="checkbox"
+                      checked={isRadioActive}
+                      onChange={(e) => setIsRadioActive(e.target.checked)}
+                      className="accent-accent"
+                    />
+                    <span>VHF Radio Beacon</span>
+                  </label>
+                  <label className="flex items-center gap-2 p-1.5 bg-bg-panel border border-text-main/10 cursor-pointer hover:border-accent">
+                    <input
+                      type="checkbox"
+                      checked={isHighBrightness}
+                      onChange={(e) => setIsHighBrightness(e.target.checked)}
+                      className="accent-accent"
+                    />
+                    <span>High Brightness</span>
+                  </label>
+                  <label className="flex items-center gap-2 p-1.5 bg-bg-panel border border-text-main/10 cursor-pointer hover:border-accent">
+                    <input
+                      type="checkbox"
+                      checked={powerSaveMode}
+                      onChange={(e) => setPowerSaveMode(e.target.checked)}
+                      className="accent-accent"
+                    />
+                    <span>Eco Power Saver</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Battery Thermal Heater Cell & Recharge */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  onClick={() => setIsHeatingCellActive(!isHeatingCellActive)}
+                  className={`py-1.5 px-2 border text-[9px] uppercase font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                    isHeatingCellActive
+                      ? 'bg-amber-500/20 border-amber-500 text-amber-400'
+                      : 'bg-bg-panel border-text-main/20 text-text-main/70 hover:border-text-main/40'
+                  }`}
+                  title="Warms battery casing to prevent sub-zero capacity loss"
+                >
+                  <Flame className="w-3 h-3" />
+                  <span>{isHeatingCellActive ? 'Battery Heater ON' : 'Enable Battery Heater'}</span>
+                </button>
+
+                <button
+                  onClick={() => setBatteryLevel(100)}
+                  className="py-1.5 px-2 bg-accent/20 border border-accent/40 text-accent text-[9px] uppercase font-bold flex items-center justify-center gap-1.5 hover:bg-accent/30 cursor-pointer transition-colors"
+                >
+                  <Zap className="w-3 h-3" />
+                  <span>Swap Battery Cell [100%]</span>
+                </button>
               </div>
             </div>
 
@@ -1448,6 +1770,7 @@ interface GalleryItem {
 
 function DestinationGallery({ destination }: { destination: any }) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const { currentLang, t } = useLanguage();
 
   const galleryItems: GalleryItem[] = destination?.gallery && destination.gallery.length > 0
     ? destination.gallery
@@ -1489,11 +1812,11 @@ function DestinationGallery({ destination }: { destination: any }) {
             <motion.div variants={fadeIn} className="flex items-center gap-3 mb-3">
               <Images className="w-5 h-5 text-accent" />
               <span className="font-sans text-[11px] uppercase tracking-[0.3em] text-accent font-bold">
-                VISUAL ARCHIVE
+                {t('gallery.title', 'VISUAL ARCHIVE')}
               </span>
             </motion.div>
             <motion.h2 variants={fadeIn} className="text-4xl md:text-6xl font-black uppercase tracking-tighter drop-shadow-md">
-              {destination?.name} Gallery
+              {destination?.name} {t('gallery.title', 'Gallery')}
             </motion.h2>
           </div>
 
@@ -1511,16 +1834,16 @@ function DestinationGallery({ destination }: { destination: any }) {
         <motion.div
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-          variants={staggerContainer}
+          viewport={{ once: true, amount: 0.1 }}
+          variants={galleryStagger}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
         >
           {galleryItems.map((item, idx) => (
             <motion.div
               key={idx}
-              variants={fadeIn}
-              whileHover={{ y: -6 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
+              variants={galleryItemFadeIn}
+              whileHover={{ y: -10, scale: 1.03 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               onClick={() => setLightboxIndex(idx)}
               className="group relative cursor-pointer overflow-hidden border border-text-main/10 bg-bg-base shadow-xl aspect-[4/3] rounded-sm"
             >
@@ -4222,15 +4545,32 @@ function SatelliteRadarSimulation({ destination }: { destination: any }) {
   );
 }
 
-{/* --- INTERACTIVE 3D TERRAIN FLYOVER SIMULATOR --- */}
+{/* --- INTERACTIVE 3D TERRAIN FLYOVER SIMULATOR WITH VR MODE --- */}
 function Terrain3DFlyoverViewer({ destination }: { destination: any }) {
   const [wireframe, setWireframe] = useState(false);
   const [rotation, setRotation] = useState(25);
   const [isFlying, setIsFlying] = useState(false);
-  const flyIntervalRef = useRef<any>(null);
+  
+  // Fullscreen VR Mode States
+  const [isVrMode, setIsVrMode] = useState(false);
+  const [isStereoscopic, setIsStereoscopic] = useState(true);
+  const [sensorActive, setSensorActive] = useState(false);
+  const [sensorSource, setSensorSource] = useState<'gyro' | 'simulated'>('simulated');
+  const [vrPitch, setVrPitch] = useState<number>(20);
+  const [vrYaw, setVrYaw] = useState<number>(45);
+  const [vrRoll, setVrRoll] = useState<number>(0);
+  const [vrAltitude, setVrAltitude] = useState<number>(destination.elevationMeters ? parseInt(destination.elevationMeters) || 5200 : 5200);
+  const [vrSpeed, setVrSpeed] = useState<number>(65);
+  const [activeVrWaypoint, setActiveVrWaypoint] = useState<number>(0);
+  const [isAutoFlyVr, setIsAutoFlyVr] = useState<boolean>(true);
 
+  const flyIntervalRef = useRef<any>(null);
+  const vrAnimationRef = useRef<any>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  // Desktop/2D Orbit animation loop
   useEffect(() => {
-    if (isFlying) {
+    if (isFlying && !isVrMode) {
       flyIntervalRef.current = setInterval(() => {
         setRotation(prev => (prev + 2) % 360);
       }, 50);
@@ -4240,7 +4580,291 @@ function Terrain3DFlyoverViewer({ destination }: { destination: any }) {
     return () => {
       if (flyIntervalRef.current) clearInterval(flyIntervalRef.current);
     };
-  }, [isFlying]);
+  }, [isFlying, isVrMode]);
+
+  // VR Auto Flyover Yaw drift loop
+  useEffect(() => {
+    if (isVrMode && isAutoFlyVr) {
+      vrAnimationRef.current = setInterval(() => {
+        setVrYaw(prev => (prev + 0.4) % 360);
+      }, 40);
+    } else {
+      if (vrAnimationRef.current) clearInterval(vrAnimationRef.current);
+    }
+    return () => {
+      if (vrAnimationRef.current) clearInterval(vrAnimationRef.current);
+    };
+  }, [isVrMode, isAutoFlyVr]);
+
+  // Device Orientation Listener for VR Gyroscopic Head Tracking
+  useEffect(() => {
+    if (!isVrMode) return;
+
+    const handleDeviceOrientation = (e: DeviceOrientationEvent) => {
+      if (e.beta !== null || e.alpha !== null) {
+        setSensorActive(true);
+        setSensorSource('gyro');
+        if (e.beta !== null) setVrPitch(Math.max(-60, Math.min(60, e.beta - 45)));
+        if (e.alpha !== null) setVrYaw((e.alpha + 360) % 360);
+        if (e.gamma !== null) setVrRoll(Math.max(-30, Math.min(30, e.gamma)));
+      }
+    };
+
+    if (window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', handleDeviceOrientation, true);
+    }
+
+    return () => {
+      if (window.DeviceOrientationEvent) {
+        window.removeEventListener('deviceorientation', handleDeviceOrientation, true);
+      }
+    };
+  }, [isVrMode]);
+
+  // Request Gyroscope permissions (specifically for iOS Safari)
+  const requestGyroPermission = async () => {
+    if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+      try {
+        const permissionState = await (DeviceOrientationEvent as any).requestPermission();
+        if (permissionState === 'granted') {
+          setSensorActive(true);
+          setSensorSource('gyro');
+        }
+      } catch (err) {
+        console.warn('Gyro permission rejected', err);
+      }
+    }
+  };
+
+  // Touch drag for VR view panning fallback
+  const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    touchStartRef.current = { x: clientX, y: clientY };
+  };
+
+  const handleTouchMove = (e: React.TouchEvent | React.MouseEvent) => {
+    if (!touchStartRef.current) return;
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const deltaX = clientX - touchStartRef.current.x;
+    const deltaY = clientY - touchStartRef.current.y;
+
+    setVrYaw(prev => (prev - deltaX * 0.3 + 360) % 360);
+    setVrPitch(prev => Math.max(-70, Math.min(70, prev - deltaY * 0.3)));
+
+    touchStartRef.current = { x: clientX, y: clientY };
+  };
+
+  const handleTouchEnd = () => {
+    touchStartRef.current = null;
+  };
+
+  const vrWaypoints = [
+    { name: `${destination.name} Summit`, alt: `${vrAltitude + 800}m`, bearing: 345, dist: '1.2 km' },
+    { name: 'Northern Icefall Ridge', alt: `${vrAltitude + 320}m`, bearing: 45, dist: '3.4 km' },
+    { name: 'Base Camp Staging Zone', alt: `${vrAltitude - 650}m`, bearing: 190, dist: '5.8 km' },
+    { name: 'Glacial Couloir Pass', alt: `${vrAltitude - 120}m`, bearing: 280, dist: '2.1 km' }
+  ];
+
+  // Helper to render the 3D VR terrain viewport grid
+  const renderVrViewport = (eyeLabel: string) => {
+    return (
+      <div className="relative w-full h-full overflow-hidden bg-[#050b14] flex flex-col justify-between p-4 select-none">
+        {/* Topographic Horizon Line */}
+        <div 
+          className="absolute inset-0 pointer-events-none transition-transform duration-75 ease-out flex items-center justify-center"
+          style={{
+            transform: `translateY(${vrPitch * 3}px) rotate(${vrRoll}deg)`
+          }}
+        >
+          {/* Horizon Bar */}
+          <div className="w-[150%] h-[1px] bg-emerald-500/30 flex justify-between items-center">
+            <span className="text-[8px] text-emerald-500/60 font-mono -translate-y-3">HORIZON -0°</span>
+            <span className="text-[8px] text-emerald-500/60 font-mono -translate-y-3">HORIZON +0°</span>
+          </div>
+
+          {/* 3D Topographic Mesh Wireframe Plane */}
+          <div 
+            className="absolute w-[800px] h-[800px] border border-emerald-500/30 transition-transform duration-100 ease-out flex items-center justify-center"
+            style={{
+              transformStyle: 'preserve-3d',
+              transform: `perspective(600px) rotateX(${60 + vrPitch * 0.4}deg) rotateZ(${vrYaw}deg) scale(1.2)`
+            }}
+          >
+            <div className="w-full h-full grid grid-cols-10 grid-rows-10 gap-0 border border-emerald-500/40 bg-emerald-950/10">
+              {[...Array(100)].map((_, i) => {
+                const elev = Math.sin(i * 0.5 + vrYaw * 0.05) * 400 + (i % 7) * 80;
+                const isSummit = i === 44;
+                return (
+                  <div
+                    key={i}
+                    className={`border text-[7px] font-mono flex items-center justify-center transition-colors ${
+                      isSummit
+                        ? 'border-cyan-400 bg-cyan-400/20 text-cyan-300 font-bold animate-pulse'
+                        : i % 3 === 0
+                        ? 'border-emerald-500/40 text-emerald-400/50'
+                        : 'border-emerald-500/15 text-emerald-500/20'
+                    }`}
+                  >
+                    {Math.round(elev)}m
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* VR HUD Overlay - Crosshair & Telemetry */}
+        <div className="relative z-10 flex justify-between items-start text-[10px] font-mono text-emerald-400">
+          <div className="bg-black/60 backdrop-blur-md p-2 border border-emerald-500/30 space-y-1">
+            <div className="flex items-center gap-1.5 font-bold text-cyan-400">
+              <Eye className="w-3.5 h-3.5" />
+              <span>VR EYE: {eyeLabel}</span>
+            </div>
+            <div>ALT: <strong className="text-white">{vrAltitude} m</strong></div>
+            <div>SPD: <strong className="text-white">{vrSpeed} kts</strong></div>
+            <div>PITCH: <strong className="text-white">{Math.round(vrPitch)}°</strong></div>
+            <div>YAW: <strong className="text-white">{Math.round(vrYaw)}°</strong></div>
+          </div>
+
+          <div className="bg-black/60 backdrop-blur-md p-2 border border-emerald-500/30 text-right space-y-1">
+            <div className="text-emerald-400 font-bold">{destination.name.toUpperCase()}</div>
+            <div className="text-[9px] text-emerald-500/70">LAT: {destination.lat || 27.9881}° N</div>
+            <div className="text-[9px] text-emerald-500/70">LNG: {destination.lng || 86.9250}° E</div>
+            <div className="text-cyan-400 font-bold mt-1">WAYPOINT: {vrWaypoints[activeVrWaypoint].name}</div>
+          </div>
+        </div>
+
+        {/* Center Target Aim Reticle */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+          <div className="relative flex items-center justify-center">
+            <div className="w-12 h-12 border border-emerald-400/40 rounded-full animate-ping opacity-25" />
+            <Crosshair className="w-8 h-8 text-cyan-400 stroke-[1.5]" />
+            <div className="absolute top-10 font-mono text-[9px] text-cyan-400 bg-black/70 px-2 py-0.5 border border-cyan-400/40 rounded">
+              TARGET: {vrWaypoints[activeVrWaypoint].dist} ({vrWaypoints[activeVrWaypoint].bearing}°)
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Corner Tactical Visual Gauges: Speed Indicator (Left) & Altitude Gauge (Right) */}
+        <div className="absolute bottom-10 left-4 right-4 z-20 flex justify-between items-end pointer-events-auto">
+          {/* SPEED INDICATOR (Bottom Left) */}
+          <div className="bg-black/80 backdrop-blur-md p-2.5 border border-emerald-500/40 rounded shadow-xl flex items-center gap-3 font-mono text-[10px]">
+            <div className="relative w-12 h-12 flex items-center justify-center border border-emerald-500/30 rounded-full bg-emerald-950/20">
+              {/* Circular Speed Gauge Ring */}
+              <svg className="w-12 h-12 -rotate-90 transform" viewBox="0 0 36 36">
+                <path
+                  className="text-emerald-500/20"
+                  strokeWidth="3"
+                  stroke="currentColor"
+                  fill="none"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <path
+                  className="text-cyan-400 transition-all duration-300"
+                  strokeDasharray={`${(vrSpeed / 120) * 100}, 100`}
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  stroke="currentColor"
+                  fill="none"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+              </svg>
+              <div className="absolute text-[9px] font-bold text-white leading-none text-center">
+                <div>{vrSpeed}</div>
+                <div className="text-[6px] text-emerald-400/80">KTS</div>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                <span>SPEED INDICATOR</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+              </div>
+              <div className="text-[8px] text-white/70">
+                MACH { (vrSpeed * 0.0015).toFixed(2) } • {vrSpeed > 85 ? 'HIGH THRUST' : vrSpeed > 40 ? 'CRUISE VELOCITY' : 'APPROACH SLOW'}
+              </div>
+              {/* Speed Adjustment Buttons */}
+              <div className="flex items-center gap-1 pt-0.5">
+                <button
+                  onClick={() => setVrSpeed(prev => Math.max(10, prev - 10))}
+                  className="px-1.5 py-0.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/40 text-[8px] font-bold rounded cursor-pointer"
+                  title="Decrease Speed"
+                >
+                  -10 KTS
+                </button>
+                <button
+                  onClick={() => setVrSpeed(prev => Math.min(150, prev + 10))}
+                  className="px-1.5 py-0.5 bg-cyan-400/20 border border-cyan-400/40 text-cyan-300 hover:bg-cyan-400/40 text-[8px] font-bold rounded cursor-pointer"
+                  title="Increase Speed"
+                >
+                  +10 KTS
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ALTITUDE GAUGE (Bottom Right) */}
+          <div className="bg-black/80 backdrop-blur-md p-2.5 border border-emerald-500/40 rounded shadow-xl flex items-center gap-3 font-mono text-[10px]">
+            <div className="space-y-1 text-right">
+              <div className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider flex items-center justify-end gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                <span>ALTITUDE GAUGE</span>
+              </div>
+              <div className="text-[8px] text-white/70">
+                ELEVATION: <strong className="text-cyan-300">{vrAltitude} M</strong> MSL
+              </div>
+              {/* Altitude Adjustment Buttons */}
+              <div className="flex items-center justify-end gap-1 pt-0.5">
+                <button
+                  onClick={() => setVrAltitude(prev => Math.max(1000, prev - 250))}
+                  className="px-1.5 py-0.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/40 text-[8px] font-bold rounded cursor-pointer"
+                  title="Descend"
+                >
+                  -250M
+                </button>
+                <button
+                  onClick={() => setVrAltitude(prev => Math.min(12000, prev + 250))}
+                  className="px-1.5 py-0.5 bg-cyan-400/20 border border-cyan-400/40 text-cyan-300 hover:bg-cyan-400/40 text-[8px] font-bold rounded cursor-pointer"
+                  title="Climb"
+                >
+                  +250M
+                </button>
+              </div>
+            </div>
+
+            {/* Vertical Altimeter Bar */}
+            <div className="relative w-4 h-12 bg-emerald-950/40 border border-emerald-500/40 rounded overflow-hidden flex flex-col justify-end">
+              <div
+                className="w-full bg-gradient-to-t from-emerald-500 to-cyan-400 transition-all duration-300"
+                style={{ height: `${Math.max(10, Math.min(100, (vrAltitude / 10000) * 100))}%` }}
+              />
+              <div className="absolute inset-0 flex flex-col justify-between p-0.5 pointer-events-none">
+                <div className="w-full h-[1px] bg-white/40" />
+                <div className="w-full h-[1px] bg-white/40" />
+                <div className="w-full h-[1px] bg-white/40" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Compass Heading Ribbon */}
+        <div className="relative z-10 flex justify-center items-center">
+          <div className="bg-black/70 border border-emerald-500/30 px-4 py-1 flex items-center gap-4 text-[10px] font-mono text-emerald-400">
+            <span>N 0°</span>
+            <span>NE 45°</span>
+            <span className="text-cyan-400 font-bold px-2 py-0.5 bg-cyan-400/20 border border-cyan-400/40 rounded">
+              HEADING {Math.round(vrYaw)}°
+            </span>
+            <span>E 90°</span>
+            <span>S 180°</span>
+            <span>W 270°</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <section className="relative z-20 border-b border-text-main/10 bg-bg-base p-8 md:p-24 overflow-hidden">
@@ -4250,11 +4874,11 @@ function Terrain3DFlyoverViewer({ destination }: { destination: any }) {
             <div className="flex items-center gap-3 mb-2">
               <Globe className="w-5 h-5 text-accent" />
               <span className="font-sans text-[11px] uppercase tracking-[0.3em] text-accent font-bold">
-                SIMULATED 3D TOPOGRAPHIC MESH
+                SIMULATED 3D TOPOGRAPHIC MESH & VR
               </span>
             </div>
             <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter">
-              3D Terrain Flyover View
+              3D Terrain Flyover Viewer
             </h2>
           </div>
 
@@ -4270,17 +4894,41 @@ function Terrain3DFlyoverViewer({ destination }: { destination: any }) {
 
             <button
               onClick={() => setIsFlying(!isFlying)}
-              className="px-4 py-2 bg-accent text-bg-base font-mono text-xs font-bold uppercase tracking-wider hover:opacity-90 cursor-pointer shadow-md"
+              className="px-4 py-2 bg-bg-panel border border-text-main/20 text-text-main font-mono text-xs font-bold uppercase tracking-wider hover:border-accent cursor-pointer"
             >
-              {isFlying ? 'PAUSE 3D ORBIT' : 'START AUTOMATED ORBIT'}
+              {isFlying ? 'PAUSE ORBIT' : 'START 2D ORBIT'}
+            </button>
+
+            {/* Launch Fullscreen VR Mode Toggle */}
+            <button
+              onClick={() => {
+                setIsVrMode(true);
+                requestGyroPermission();
+              }}
+              className="px-5 py-2 bg-accent text-bg-base font-mono text-xs font-bold uppercase tracking-wider hover:opacity-90 cursor-pointer shadow-xl flex items-center gap-2 animate-pulse"
+            >
+              <Sparkles className="w-4 h-4 fill-current" />
+              <span>ENTER FULLSCREEN 3D VR MODE</span>
             </button>
           </div>
         </div>
 
+        {/* 2D Desktop Interactive Viewport */}
         <div className="bg-bg-panel border border-text-main/10 p-6 md:p-12 relative flex flex-col items-center justify-center min-h-[380px] overflow-hidden">
+          {/* VR Mode Ready Banner */}
+          <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
+            <div className="flex items-center gap-2 bg-bg-base/80 backdrop-blur-md px-3 py-1.5 border border-text-main/15 text-[10px] font-mono font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
+              <span>VR SENSOR COMPATIBLE (GOOGLE CARDBOARD / META QUEST / GYRO)</span>
+            </div>
+            <span className="text-[10px] font-mono text-text-main/50">
+              ELEVATION: {destination.elevationMeters || '5,200m'}
+            </span>
+          </div>
+
           {/* 3D Perspective Grid Box */}
           <div
-            className="w-full max-w-xl h-64 border border-accent/30 relative transition-transform duration-300 ease-out flex items-center justify-center shadow-2xl"
+            className="w-full max-w-xl h-64 border border-accent/30 relative transition-transform duration-300 ease-out flex items-center justify-center shadow-2xl mt-4"
             style={{
               perspective: '800px',
               transformStyle: 'preserve-3d'
@@ -4326,6 +4974,136 @@ function Terrain3DFlyoverViewer({ destination }: { destination: any }) {
           </div>
         </div>
       </div>
+
+      {/* FULLSCREEN IMMERSIVE VR OVERLAY */}
+      <AnimatePresence>
+        {isVrMode && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-[250] bg-black text-white font-mono select-none overflow-hidden flex flex-col justify-between"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onMouseDown={handleTouchStart}
+            onMouseMove={handleTouchMove}
+            onMouseUp={handleTouchEnd}
+          >
+            {/* Top VR Command Bar */}
+            <div className="w-full bg-black/90 border-b border-emerald-500/30 px-4 py-3 flex flex-wrap items-center justify-between gap-3 z-30">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-2.5 py-1 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-bold rounded">
+                  <Sparkles className="w-4 h-4 text-cyan-400 animate-spin-slow" />
+                  <span>3D VR IMMERSIVE FLYOVER MODE</span>
+                </div>
+
+                <div className="hidden sm:flex items-center gap-2 text-[10px] text-emerald-500/70 border-l border-emerald-500/20 pl-3">
+                  <span>SENSOR:</span>
+                  <strong className={sensorActive ? 'text-emerald-400' : 'text-amber-400'}>
+                    {sensorSource === 'gyro' ? 'LIVE GYROSCOPE' : 'TOUCH / MOUSE ROTATION'}
+                  </strong>
+                </div>
+              </div>
+
+              {/* Controls inside VR */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsStereoscopic(!isStereoscopic)}
+                  className={`px-3 py-1.5 border text-[10px] font-bold uppercase transition-colors cursor-pointer ${
+                    isStereoscopic
+                      ? 'bg-cyan-400/20 border-cyan-400 text-cyan-300'
+                      : 'bg-black border-emerald-500/30 text-emerald-400'
+                  }`}
+                  title="Toggle Split Stereoscopic Dual-Eye mode for VR Box/Cardboard mounts"
+                >
+                  {isStereoscopic ? 'STEREOSCOPIC (DUAL EYE)' : 'SINGLE SCREEN 360'}
+                </button>
+
+                <button
+                  onClick={() => setIsAutoFlyVr(!isAutoFlyVr)}
+                  className={`px-3 py-1.5 border text-[10px] font-bold uppercase transition-colors cursor-pointer ${
+                    isAutoFlyVr ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-black border-emerald-500/30 text-emerald-400/60'
+                  }`}
+                >
+                  {isAutoFlyVr ? 'CRUISE: ON' : 'CRUISE: OFF'}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setVrPitch(0);
+                    setVrYaw(0);
+                    setVrRoll(0);
+                  }}
+                  className="px-3 py-1.5 bg-black border border-emerald-500/30 text-emerald-400 hover:border-cyan-400 text-[10px] font-bold uppercase cursor-pointer"
+                  title="Reset Gyro Heading"
+                >
+                  RECENTER HORIZON
+                </button>
+
+                <button
+                  onClick={() => setIsVrMode(false)}
+                  className="px-4 py-1.5 bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30 text-[11px] font-bold uppercase cursor-pointer flex items-center gap-1"
+                >
+                  <X className="w-4 h-4" />
+                  <span>EXIT VR</span>
+                </button>
+              </div>
+            </div>
+
+            {/* VR Viewports Display */}
+            <div className="relative flex-1 w-full h-full overflow-hidden">
+              {isStereoscopic ? (
+                /* Split Screen Dual Eye VR Viewport */
+                <div className="w-full h-full grid grid-cols-2 gap-0 relative">
+                  {/* Left Eye */}
+                  <div className="border-r border-emerald-500/20 h-full">
+                    {renderVrViewport('LEFT')}
+                  </div>
+                  {/* Right Eye */}
+                  <div className="h-full">
+                    {renderVrViewport('RIGHT')}
+                  </div>
+                  {/* Cardboard Nose Bridge Separator */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-24 border-x border-emerald-500/20 bg-black/40 pointer-events-none rounded-full" />
+                </div>
+              ) : (
+                /* Single Screen 360 Viewport */
+                <div className="w-full h-full">
+                  {renderVrViewport('CENTER 360')}
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Target Waypoint & Touch Joystick Controls */}
+            <div className="w-full bg-black/90 border-t border-emerald-500/30 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-[10px] text-emerald-400 z-30">
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-500/60 font-bold uppercase">TARGET WAYPOINT:</span>
+                {vrWaypoints.map((wp, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveVrWaypoint(idx)}
+                    className={`px-2.5 py-1 border transition-all cursor-pointer ${
+                      activeVrWaypoint === idx
+                        ? 'bg-cyan-400/20 border-cyan-400 text-cyan-300 font-bold'
+                        : 'border-emerald-500/20 text-emerald-500/60 hover:text-emerald-400'
+                    }`}
+                  >
+                    {wp.name}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-4 text-[9px] text-emerald-500/60">
+                <span>DRAG/SWIPE SCREEN TO TILT & ROTATE 360°</span>
+                <span>•</span>
+                <span>ESC TO LEAVE VR</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
@@ -5824,7 +6602,40 @@ function AdminControlPanelModal({
   // General Notification toast
   const [notice, setNotice] = useState<string | null>(null);
 
+  // Authentication Passcode State
+  const [passcodeInput, setPasscodeInput] = useState<string>('');
+  const [isAuth, setIsAuth] = useState<boolean>(() => {
+    return sessionStorage.getItem('admin_authenticated') === 'true';
+  });
+  const [authError, setAuthError] = useState<string | null>(null);
+
   if (!isOpen) return null;
+
+  const handleAdminAuthSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = passcodeInput.trim().toLowerCase();
+    if (clean === 'admin' || clean === 'apex2026' || clean === '1234') {
+      setIsAuth(true);
+      sessionStorage.setItem('admin_authenticated', 'true');
+      setAuthError(null);
+      setPasscodeInput('');
+    } else {
+      setAuthError('INVALID PASSCODE. ACCESS DENIED.');
+    }
+  };
+
+  const handleAdminLogout = () => {
+    setIsAuth(false);
+    sessionStorage.removeItem('admin_authenticated');
+    sessionStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_authenticated');
+    localStorage.removeItem('admin_token');
+    window.dispatchEvent(new Event('storage'));
+  };
+
+  if (!isAuth) {
+    return <AdminLogin onSuccess={() => setIsAuth(true)} onClose={onClose} />;
+  }
 
   const showNotification = (msg: string) => {
     setNotice(msg);
@@ -5949,8 +6760,20 @@ function AdminControlPanelModal({
   );
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-xl flex items-center justify-center p-3 md:p-6 overflow-y-auto">
-      <div className="bg-bg-panel border border-accent/40 w-full max-w-5xl my-auto text-text-main font-mono relative shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-xl flex items-center justify-center p-3 md:p-6 overflow-y-auto"
+    >
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.96, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 15 }}
+        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+        className="bg-bg-panel border border-accent/40 w-full max-w-5xl my-auto text-text-main font-mono relative shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+      >
         
         {/* Modal Header */}
         <div className="p-5 md:p-6 border-b border-text-main/10 flex items-center justify-between bg-bg-base shrink-0">
@@ -5967,12 +6790,23 @@ function AdminControlPanelModal({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 border border-text-main/20 hover:border-accent text-text-main hover:text-accent transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleAdminLogout}
+              className="px-3 py-1.5 border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors"
+              title="Lock Panel"
+            >
+              <ShieldAlert className="w-3.5 h-3.5" />
+              <span>Lock Panel</span>
+            </button>
+
+            <button
+              onClick={onClose}
+              className="p-2 border border-text-main/20 hover:border-accent text-text-main hover:text-accent transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Navigation Tabs Bar */}
@@ -6495,8 +7329,8 @@ function AdminControlPanelModal({
           )}
 
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
